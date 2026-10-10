@@ -54,7 +54,8 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
 
-    // Media3 (ExoPlayer + MediaSession Foreground Service)
+    // Media & Media3
+    implementation(libs.androidx.media)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.session)
     implementation(libs.androidx.media3.ui)

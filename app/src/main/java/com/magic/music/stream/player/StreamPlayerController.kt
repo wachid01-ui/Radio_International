@@ -1,11 +1,12 @@
 package com.magic.music.stream.player
 
+import android.content.Context
 import com.magic.music.stream.data.model.Track
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class StreamPlayerController {
+class StreamPlayerController(private val context: Context) {
 
     private val _currentTrack = MutableStateFlow<Track?>(null)
     val currentTrack: StateFlow<Track?> = _currentTrack.asStateFlow()
@@ -31,9 +32,16 @@ class StreamPlayerController {
     private val _isShuffle = MutableStateFlow(false)
     val isShuffle: StateFlow<Boolean> = _isShuffle.asStateFlow()
 
+    init {
+        PlaybackService.playerControllerCallback = this
+    }
+
     val engine = StreamPlayerEngine(
         onStateChanged = { playing ->
             _isPlaying.value = playing
+            _currentTrack.value?.let { track ->
+                PlaybackService.startOrUpdate(context, track, playing)
+            }
         },
         onProgress = { curr, total ->
             _currentPosition.value = curr
@@ -46,6 +54,9 @@ class StreamPlayerController {
         },
         onError = { err ->
             _isPlaying.value = false
+            _currentTrack.value?.let { track ->
+                PlaybackService.startOrUpdate(context, track, false)
+            }
         }
     )
 
@@ -66,16 +77,23 @@ class StreamPlayerController {
         _isPlaying.value = true
 
         engine.play(track.videoId)
+        PlaybackService.startOrUpdate(context, track, isPlaying = true)
     }
 
     fun togglePlayPause() {
         if (_isPlaying.value) {
             engine.pause()
             _isPlaying.value = false
+            _currentTrack.value?.let { track ->
+                PlaybackService.startOrUpdate(context, track, isPlaying = false)
+            }
         } else {
             if (_currentTrack.value != null) {
                 engine.resume()
                 _isPlaying.value = true
+                _currentTrack.value?.let { track ->
+                    PlaybackService.startOrUpdate(context, track, isPlaying = true)
+                }
             } else if (_queue.value.isNotEmpty()) {
                 playTrack(_queue.value[0])
             }
@@ -120,6 +138,7 @@ class StreamPlayerController {
             // Replay single track
             _currentTrack.value?.let { track ->
                 engine.play(track.videoId)
+                PlaybackService.startOrUpdate(context, track, isPlaying = true)
             }
         } else {
             playNext()
@@ -127,6 +146,10 @@ class StreamPlayerController {
     }
 
     fun release() {
+        PlaybackService.stop(context)
+        if (PlaybackService.playerControllerCallback == this) {
+            PlaybackService.playerControllerCallback = null
+        }
         engine.release()
     }
 }
