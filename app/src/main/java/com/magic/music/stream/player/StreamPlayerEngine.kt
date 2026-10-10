@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -13,7 +14,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 
 class StreamPlayerEngine(
-    private val context: Context,
     private val onStateChanged: (isPlaying: Boolean) -> Unit,
     private val onProgress: (currentPositionMs: Long, totalDurationMs: Long) -> Unit,
     private val onEnded: () -> Unit,
@@ -22,47 +22,38 @@ class StreamPlayerEngine(
     private var webView: WebView? = null
     private val mainHandler = Handler(Looper.getMainLooper())
     private var isReady = false
-    private var pendingVideoId: String? = null
-
-    init {
-        mainHandler.post {
-            initWebView()
-        }
-    }
+    private var currentVideoId: String? = null
 
     @SuppressLint("SetJavaScriptEnabled")
-    private fun initWebView() {
-        try {
-            webView = WebView(context).apply {
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.databaseEnabled = true
-                settings.mediaPlaybackRequiresUserGesture = false
-                settings.cacheMode = WebSettings.LOAD_DEFAULT
-                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                settings.userAgentString = "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36"
+    fun attachWebView(view: WebView) {
+        this.webView = view
+        view.apply {
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            settings.databaseEnabled = true
+            settings.mediaPlaybackRequiresUserGesture = false
+            settings.cacheMode = WebSettings.LOAD_DEFAULT
+            settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            settings.userAgentString = "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36"
 
-                CookieManager.getInstance().setAcceptCookie(true)
-                try {
-                    CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-
-                webChromeClient = WebChromeClient()
-                webViewClient = object : WebViewClient() {
-                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                        return false
-                    }
-                }
-
-                addJavascriptInterface(WebAppInterface(), "AndroidBridge")
+            CookieManager.getInstance().setAcceptCookie(true)
+            try {
+                CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
 
-            loadPlayerHtml()
-        } catch (e: Exception) {
-            e.printStackTrace()
+            webChromeClient = WebChromeClient()
+            webViewClient = object : WebViewClient() {
+                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                    return false
+                }
+            }
+
+            addJavascriptInterface(WebAppInterface(), "AndroidBridge")
         }
+
+        loadPlayerHtml()
     }
 
     private fun loadPlayerHtml() {
@@ -84,8 +75,9 @@ class StreamPlayerEngine(
                     var firstScriptTag = document.getElementsByTagName('script')[0];
                     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-                    var player;
+                    var player = null;
                     var isPlayerReady = false;
+                    var pendingVid = null;
                     var progressInterval = null;
 
                     function onYouTubeIframeAPIReady() {
@@ -97,7 +89,7 @@ class StreamPlayerEngine(
                                 'playsinline': 1,
                                 'controls': 0,
                                 'rel': 0,
-                                'origin': 'https://www.youtube.com',
+                                'origin': 'https://www.youtube-nocookie.com',
                                 'enablejsapi': 1,
                                 'loop': 1,
                                 'fs': 0,
@@ -117,17 +109,24 @@ class StreamPlayerEngine(
                             player.unMute();
                             player.setVolume(100);
                         } catch(e){}
-                        AndroidBridge.postReady();
+                        if (window.AndroidBridge) {
+                            window.AndroidBridge.postReady();
+                        }
+                        if (pendingVid) {
+                            var v = pendingVid;
+                            pendingVid = null;
+                            window.loadAndPlay(v);
+                        }
                     }
 
                     function startTimer() {
                         clearInterval(progressInterval);
                         progressInterval = setInterval(function() {
                             if (player && typeof player.getCurrentTime === 'function' && typeof player.getDuration === 'function') {
-                                var curr = player.getCurrentTime();
-                                var dur = player.getDuration();
-                                if (dur > 0) {
-                                    AndroidBridge.postProgress(curr, dur);
+                                var curr = player.getCurrentTime() || 0;
+                                var dur = player.getDuration() || 0;
+                                if (dur > 0 && window.AndroidBridge) {
+                                    window.AndroidBridge.postProgress(curr, dur);
                                 }
                             }
                         }, 400);
@@ -136,22 +135,23 @@ class StreamPlayerEngine(
                     function onPlayerStateChange(event) {
                         // 0: ENDED, 1: PLAYING, 2: PAUSED, 3: BUFFERING
                         if (event.data === 0) {
-                            // Instant Auto-Replay
-                            if (player && typeof player.seekTo === 'function') {
-                                player.seekTo(0, true);
-                                player.playVideo();
-                            }
-                            AndroidBridge.postEnded();
+                            if (window.AndroidBridge) window.AndroidBridge.postEnded();
                         } else if (event.data === 1) {
                             startTimer();
-                            AndroidBridge.postState(true);
+                            try {
+                                player.unMute();
+                                player.setVolume(100);
+                            } catch(e){}
+                            if (window.AndroidBridge) window.AndroidBridge.postState(true);
                         } else if (event.data === 2) {
-                            AndroidBridge.postState(false);
+                            if (window.AndroidBridge) window.AndroidBridge.postState(false);
                         }
                     }
 
                     function onPlayerError(event) {
-                        AndroidBridge.postError("Error code: " + event.data);
+                        if (window.AndroidBridge) {
+                            window.AndroidBridge.postError("Error code: " + event.data);
+                        }
                     }
 
                     window.loadAndPlay = function(videoId) {
@@ -164,6 +164,8 @@ class StreamPlayerEngine(
                             player.setVolume(100);
                             player.playVideo();
                             startTimer();
+                        } else {
+                            pendingVid = videoId;
                         }
                     };
 
@@ -189,18 +191,16 @@ class StreamPlayerEngine(
             </html>
         """.trimIndent()
 
-        webView?.loadDataWithBaseURL("https://www.youtube.com", html, "text/html", "UTF-8", null)
+        webView?.loadDataWithBaseURL("https://www.youtube-nocookie.com", html, "text/html", "UTF-8", null)
     }
 
     fun play(videoId: String) {
+        currentVideoId = videoId
         mainHandler.post {
             if (isReady && webView != null) {
                 webView?.evaluateJavascript("window.loadAndPlay('$videoId');", null)
             } else {
-                pendingVideoId = videoId
-                if (webView == null) {
-                    initWebView()
-                }
+                // If not ready yet, it will be played inside onPlayerReady/loadPlayerHtml
             }
         }
     }
@@ -227,7 +227,7 @@ class StreamPlayerEngine(
     fun release() {
         mainHandler.post {
             isReady = false
-            pendingVideoId = null
+            currentVideoId = null
             webView?.destroy()
             webView = null
         }
@@ -238,8 +238,7 @@ class StreamPlayerEngine(
         fun postReady() {
             mainHandler.post {
                 isReady = true
-                pendingVideoId?.let { vid ->
-                    pendingVideoId = null
+                currentVideoId?.let { vid ->
                     play(vid)
                 }
             }
@@ -270,6 +269,7 @@ class StreamPlayerEngine(
 
         @JavascriptInterface
         fun postError(err: String) {
+            Log.e("StreamPlayerEngine", "Player error: $err")
             mainHandler.post {
                 onError(err)
             }

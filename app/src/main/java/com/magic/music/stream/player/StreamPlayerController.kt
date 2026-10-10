@@ -1,12 +1,11 @@
 package com.magic.music.stream.player
 
-import android.content.Context
 import com.magic.music.stream.data.model.Track
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class StreamPlayerController(context: Context) {
+class StreamPlayerController {
 
     private val _currentTrack = MutableStateFlow<Track?>(null)
     val currentTrack: StateFlow<Track?> = _currentTrack.asStateFlow()
@@ -32,8 +31,7 @@ class StreamPlayerController(context: Context) {
     private val _isShuffle = MutableStateFlow(false)
     val isShuffle: StateFlow<Boolean> = _isShuffle.asStateFlow()
 
-    private val engine = StreamPlayerEngine(
-        context = context,
+    val engine = StreamPlayerEngine(
         onStateChanged = { playing ->
             _isPlaying.value = playing
         },
@@ -67,7 +65,7 @@ class StreamPlayerController(context: Context) {
         _duration.value = track.durationMs
         _isPlaying.value = true
 
-        engine.play(track.id)
+        engine.play(track.videoId)
     }
 
     fun togglePlayPause() {
@@ -121,7 +119,7 @@ class StreamPlayerController(context: Context) {
         if (_isRepeat.value && _queue.value.size <= 1) {
             // Replay single track
             _currentTrack.value?.let { track ->
-                engine.play(track.id)
+                engine.play(track.videoId)
             }
         } else {
             playNext()

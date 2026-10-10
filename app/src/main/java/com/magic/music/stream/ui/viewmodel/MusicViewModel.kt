@@ -27,7 +27,7 @@ data class UiState(
 class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     private val apiService = YouTubeMusicService()
-    val playerController = StreamPlayerController(application)
+    val playerController = StreamPlayerController()
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
