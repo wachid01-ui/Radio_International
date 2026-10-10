@@ -1,7 +1,5 @@
 package com.magic.music.stream.ui.screens
 
-import android.view.ViewGroup
-import android.webkit.WebView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -47,7 +45,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalFocusManager
@@ -55,7 +52,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import com.magic.music.stream.ui.components.MiniPlayer
 import com.magic.music.stream.ui.components.PlayerModalSheet
 import com.magic.music.stream.ui.components.TrackItem
@@ -94,19 +90,6 @@ fun SingleStreamScreen(viewModel: MusicViewModel) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Live attached WebView Player Engine
-            AndroidView(
-                factory = { ctx ->
-                    WebView(ctx).apply {
-                        layoutParams = ViewGroup.LayoutParams(1, 1)
-                        viewModel.playerController.engine.attachWebView(this)
-                    }
-                },
-                modifier = Modifier
-                    .size(1.dp)
-                    .alpha(0.01f)
-            )
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()

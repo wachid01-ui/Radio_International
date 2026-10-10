@@ -37,6 +37,7 @@ class StreamPlayerController(private val context: Context) {
     }
 
     val engine = StreamPlayerEngine(
+        context = context,
         onStateChanged = { playing ->
             _isPlaying.value = playing
             _currentTrack.value?.let { track ->

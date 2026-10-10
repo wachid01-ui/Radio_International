@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
@@ -28,11 +29,12 @@ class PlaybackService : Service() {
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var wakeLock: PowerManager.WakeLock? = null
+    private var wifiLock: WifiManager.WifiLock? = null
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        acquireWakeLock()
+        acquireLocks()
         instance = this
     }
 
@@ -56,13 +58,18 @@ class PlaybackService : Service() {
                 val isPlaying = intent.getBooleanExtra(EXTRA_IS_PLAYING, true)
                 val artworkUrl = intent.getStringExtra(EXTRA_ARTWORK) ?: ""
 
-                updateNotification(title, artist, isPlaying, artworkUrl)
+                // 1. Immediately post foreground notification to satisfy Android 8+ foreground service requirements
+                val initialNotification = buildNotification(title, artist, isPlaying, null)
+                startForeground(NOTIFICATION_ID, initialNotification)
+
+                // 2. Asynchronously load high-res album art and update notification
+                updateNotificationWithArtwork(title, artist, isPlaying, artworkUrl)
             }
         }
         return START_STICKY
     }
 
-    private fun acquireWakeLock() {
+    private fun acquireLocks() {
         if (wakeLock == null) {
             val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
             wakeLock = powerManager.newWakeLock(
@@ -70,12 +77,27 @@ class PlaybackService : Service() {
                 "MagicMusicStream:WakeLock"
             ).apply {
                 setReferenceCounted(false)
-                acquire(24 * 60 * 60 * 1000L) // 24 hours max
+                acquire(24 * 60 * 60 * 1000L) // 24 hours
+            }
+        }
+
+        if (wifiLock == null) {
+            try {
+                val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                wifiLock = wifiManager.createWifiLock(
+                    WifiManager.WIFI_MODE_FULL_HIGH_PERF,
+                    "MagicMusicStream:WifiLock"
+                ).apply {
+                    setReferenceCounted(false)
+                    acquire()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
-    private fun releaseWakeLock() {
+    private fun releaseLocks() {
         try {
             if (wakeLock?.isHeld == true) {
                 wakeLock?.release()
@@ -84,18 +106,30 @@ class PlaybackService : Service() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+
+        try {
+            if (wifiLock?.isHeld == true) {
+                wifiLock?.release()
+            }
+            wifiLock = null
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
-    private fun updateNotification(title: String, artist: String, isPlaying: Boolean, artworkUrl: String) {
+    private fun updateNotificationWithArtwork(title: String, artist: String, isPlaying: Boolean, artworkUrl: String) {
+        if (artworkUrl.isBlank()) return
         serviceScope.launch {
             val bitmap = loadBitmap(artworkUrl)
-            val notification = buildNotification(title, artist, isPlaying, bitmap)
-            startForeground(NOTIFICATION_ID, notification)
+            if (bitmap != null) {
+                val notification = buildNotification(title, artist, isPlaying, bitmap)
+                val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                manager.notify(NOTIFICATION_ID, notification)
+            }
         }
     }
 
     private suspend fun loadBitmap(url: String): Bitmap? = withContext(Dispatchers.IO) {
-        if (url.isBlank()) return@withContext null
         try {
             val loader = ImageLoader(this@PlaybackService)
             val request = ImageRequest.Builder(this@PlaybackService)
@@ -192,7 +226,7 @@ class PlaybackService : Service() {
     }
 
     override fun onDestroy() {
-        releaseWakeLock()
+        releaseLocks()
         instance = null
         super.onDestroy()
     }
