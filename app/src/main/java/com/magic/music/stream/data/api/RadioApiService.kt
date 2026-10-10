@@ -38,18 +38,18 @@ class RadioApiService {
         cache[cacheKey]?.let { return it }
 
         return try {
-            val response: List<RadioStation> = client.get("$baseUrl/stations/topclick/80") {
+            val response: List<RadioStation> = client.get("$baseUrl/stations/topclick/80?hidebroken=true") {
                 header("User-Agent", "MagicRadioApp/1.0.0")
             }.body()
 
-            val filtered = response.filter { it.streamUrl.isNotBlank() && it.name.isNotBlank() }
+            val filtered = response.filter { it.streamUrl.isNotBlank() && it.name.isNotBlank() && it.lastCheckOk != 0 }
             if (filtered.isNotEmpty()) {
                 cache[cacheKey] = filtered
             }
             filtered
         } catch (e: Exception) {
             e.printStackTrace()
-            getStationsFromMirror("stations/topclick/80")
+            getStationsFromMirror("stations/topclick/80?hidebroken=true")
         }
     }
 
@@ -59,11 +59,11 @@ class RadioApiService {
         cache[cacheKey]?.let { return it }
 
         return try {
-            val response: List<RadioStation> = client.get("$baseUrl/stations/bycountrycodeexact/$code?order=votes&reverse=true&limit=80") {
+            val response: List<RadioStation> = client.get("$baseUrl/stations/bycountrycodeexact/$code?order=votes&reverse=true&limit=80&hidebroken=true") {
                 header("User-Agent", "MagicRadioApp/1.0.0")
             }.body()
 
-            val filtered = response.filter { it.streamUrl.isNotBlank() && it.name.isNotBlank() }
+            val filtered = response.filter { it.streamUrl.isNotBlank() && it.name.isNotBlank() && it.lastCheckOk != 0 }
             if (filtered.isNotEmpty()) {
                 cache[cacheKey] = filtered
                 filtered
@@ -73,7 +73,7 @@ class RadioApiService {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            getStationsFromMirror("stations/bycountrycodeexact/$code?order=votes&reverse=true&limit=80")
+            getStationsFromMirror("stations/bycountrycodeexact/$code?order=votes&reverse=true&limit=80&hidebroken=true")
         }
     }
 
@@ -95,12 +95,12 @@ class RadioApiService {
         }
 
         return try {
-            val url = "$baseUrl/stations/bytag/$tag?order=votes&reverse=true&limit=60"
+            val url = "$baseUrl/stations/bytag/$tag?order=votes&reverse=true&limit=60&hidebroken=true"
             val response: List<RadioStation> = client.get(url) {
                 header("User-Agent", "MagicRadioApp/1.0.0")
             }.body()
 
-            val filtered = response.filter { it.streamUrl.isNotBlank() && it.name.isNotBlank() }
+            val filtered = response.filter { it.streamUrl.isNotBlank() && it.name.isNotBlank() && it.lastCheckOk != 0 }
             if (filtered.isNotEmpty()) {
                 cache[cacheKey] = filtered
             }
@@ -119,11 +119,11 @@ class RadioApiService {
         cache[cacheKey]?.let { return it }
 
         return try {
-            val response: List<RadioStation> = client.get("$baseUrl/stations/byname/$clean?order=votes&reverse=true&limit=60") {
+            val response: List<RadioStation> = client.get("$baseUrl/stations/byname/$clean?order=votes&reverse=true&limit=60&hidebroken=true") {
                 header("User-Agent", "MagicRadioApp/1.0.0")
             }.body()
 
-            val filtered = response.filter { it.streamUrl.isNotBlank() && it.name.isNotBlank() }
+            val filtered = response.filter { it.streamUrl.isNotBlank() && it.name.isNotBlank() && it.lastCheckOk != 0 }
             if (filtered.isNotEmpty()) {
                 cache[cacheKey] = filtered
             }
@@ -140,7 +140,7 @@ class RadioApiService {
             val response: List<RadioStation> = client.get(mirrorUrl) {
                 header("User-Agent", "MagicRadioApp/1.0.0")
             }.body()
-            response.filter { it.streamUrl.isNotBlank() && it.name.isNotBlank() }
+            response.filter { it.streamUrl.isNotBlank() && it.name.isNotBlank() && it.lastCheckOk != 0 }
         } catch (e: Exception) {
             emptyList()
         }

@@ -31,10 +31,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -80,6 +82,7 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
     val liveTitle by viewModel.radioPlayer.liveTitle.collectAsState()
     val sleepTimer by viewModel.radioPlayer.sleepTimerMinutes.collectAsState()
     val favoriteIds by viewModel.favoriteIds.collectAsState()
+    val playbackError by viewModel.radioPlayer.playbackError.collectAsState()
 
     val focusManager = LocalFocusManager.current
 
@@ -398,6 +401,59 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                                 isFavorite = isFav,
                                 onToggleFavorite = { viewModel.toggleFavorite(station) },
                                 onClick = { viewModel.playStation(station) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Playback Error Banner
+            AnimatedVisibility(
+                visible = playbackError != null,
+                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = if (currentStation != null) 92.dp else 16.dp, start = 16.dp, end = 16.dp)
+            ) {
+                playbackError?.let { msg ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(AccentRose.copy(alpha = 0.25f))
+                            .border(1.dp, AccentRose.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = AccentRose,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = msg,
+                                color = TextPrimary,
+                                fontSize = 12.sp,
+                                maxLines = 2
+                            )
+                        }
+                        IconButton(
+                            onClick = { viewModel.radioPlayer.clearError() },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Tutup",
+                                tint = TextMuted,
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }

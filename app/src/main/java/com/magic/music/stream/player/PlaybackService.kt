@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.net.wifi.WifiManager
@@ -14,6 +15,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
@@ -59,7 +61,20 @@ class PlaybackService : Service() {
                 val artworkUrl = intent.getStringExtra(EXTRA_ARTWORK) ?: ""
 
                 val initialNotification = buildNotification(title, artist, isPlaying, null)
-                startForeground(NOTIFICATION_ID, initialNotification)
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        ServiceCompat.startForeground(
+                            this,
+                            NOTIFICATION_ID,
+                            initialNotification,
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                        )
+                    } else {
+                        startForeground(NOTIFICATION_ID, initialNotification)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
 
                 updateNotificationWithArtwork(title, artist, isPlaying, artworkUrl)
             }

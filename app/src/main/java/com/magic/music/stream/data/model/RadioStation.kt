@@ -21,7 +21,11 @@ data class RadioStation(
     val language: String = "indonesian",
     val votes: Int = 0,
     val codec: String = "MP3",
-    val bitrate: Int = 128
+    val bitrate: Int = 128,
+    @SerialName("lastcheckok")
+    val lastCheckOk: Int = 1,
+    @SerialName("hls")
+    val hls: Int = 0
 ) {
     val streamUrl: String
         get() = urlResolved.ifBlank { url }

@@ -38,7 +38,11 @@ class RadioPlayerController(private val context: Context) {
     private val _sleepTimerMinutes = MutableStateFlow(0)
     val sleepTimerMinutes: StateFlow<Int> = _sleepTimerMinutes.asStateFlow()
 
+    private val _playbackError = MutableStateFlow<String?>(null)
+    val playbackError: StateFlow<String?> = _playbackError.asStateFlow()
+
     private var countDownTimer: CountDownTimer? = null
+    private var retryCount = 0
 
     private val exoPlayer: ExoPlayer = ExoPlayer.Builder(context)
         .setAudioAttributes(
@@ -61,6 +65,7 @@ class RadioPlayerController(private val context: Context) {
                     Player.STATE_READY -> {
                         _isBuffering.value = false
                         _isPlaying.value = exoPlayer.playWhenReady
+                        retryCount = 0
                     }
                     Player.STATE_ENDED, Player.STATE_IDLE -> {
                         _isBuffering.value = false
@@ -95,13 +100,24 @@ class RadioPlayerController(private val context: Context) {
             override fun onPlayerError(error: PlaybackException) {
                 _isBuffering.value = false
                 _isPlaying.value = false
-                // Auto retry once if network glitch
-                exoPlayer.prepare()
+                error.printStackTrace()
+
+                // Prevent infinite prepare loop on dead/offline streams
+                if (retryCount < 1 && error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED) {
+                    retryCount++
+                    exoPlayer.prepare()
+                } else {
+                    retryCount = 0
+                    _playbackError.value = "Stasiun radio offline atau stream tidak dapat dimuat."
+                }
             }
         })
     }
 
     fun playStation(station: RadioStation, newQueue: List<RadioStation>? = null) {
+        retryCount = 0
+        _playbackError.value = null
+
         if (newQueue != null) {
             _stationQueue.value = newQueue
             _currentIndex.value = newQueue.indexOfFirst { it.id == station.id }.coerceAtLeast(0)
@@ -112,23 +128,38 @@ class RadioPlayerController(private val context: Context) {
         _isBuffering.value = true
         _isPlaying.value = true
 
-        val mediaMetadata = MediaMetadata.Builder()
-            .setTitle(station.name)
-            .setArtist(station.cleanTags.ifBlank { station.country })
-            .setArtworkUri(if (station.logoUrl.isNotBlank()) Uri.parse(station.logoUrl) else null)
-            .build()
+        try {
+            val artworkUri = if (station.logoUrl.isNotBlank()) {
+                try { Uri.parse(station.logoUrl) } catch (e: Exception) { null }
+            } else null
 
-        val mediaItem = MediaItem.Builder()
-            .setUri(station.streamUrl)
-            .setMediaMetadata(mediaMetadata)
-            .build()
+            val mediaMetadata = MediaMetadata.Builder()
+                .setTitle(station.name)
+                .setArtist(station.cleanTags.ifBlank { station.country })
+                .setArtworkUri(artworkUri)
+                .build()
 
-        exoPlayer.stop()
-        exoPlayer.setMediaItem(mediaItem)
-        exoPlayer.prepare()
-        exoPlayer.playWhenReady = true
+            val mediaItem = MediaItem.Builder()
+                .setUri(station.streamUrl)
+                .setMediaMetadata(mediaMetadata)
+                .build()
 
-        PlaybackService.startOrUpdate(context, station, isPlaying = true, "")
+            exoPlayer.stop()
+            exoPlayer.setMediaItem(mediaItem)
+            exoPlayer.prepare()
+            exoPlayer.playWhenReady = true
+
+            PlaybackService.startOrUpdate(context, station, isPlaying = true, "")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            _isBuffering.value = false
+            _isPlaying.value = false
+            _playbackError.value = "Gagal memutar stasiun: ${e.message}"
+        }
+    }
+
+    fun clearError() {
+        _playbackError.value = null
     }
 
     fun togglePlayPause() {
