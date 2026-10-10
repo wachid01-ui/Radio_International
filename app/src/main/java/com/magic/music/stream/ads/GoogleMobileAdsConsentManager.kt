@@ -22,7 +22,7 @@ class GoogleMobileAdsConsentManager private constructor(context: Context) {
      * Mengecek apakah iklan sudah diizinkan untuk diminta (canRequestAds)
      */
     val canRequestAds: Boolean
-        get() = consentInformation.canRequestAds
+        get() = consentInformation.canRequestAds()
 
     /**
      * Mengecek apakah opsi privasi (Privacy Options) diperlukan untuk ditampilkan di menu
