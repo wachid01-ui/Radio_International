@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Radio
@@ -54,6 +55,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.magic.music.stream.ui.components.CountryPickerModal
 import com.magic.music.stream.ui.components.RadioMiniPlayer
 import com.magic.music.stream.ui.components.RadioModalSheet
 import com.magic.music.stream.ui.components.StationItem
@@ -133,12 +135,41 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                                 letterSpacing = 1.sp
                             )
                             Text(
-                                text = "Live Indonesia & Global Stations",
+                                text = "Worldwide & Local FM Online",
                                 color = AccentCyan,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium
                             )
                         }
+                    }
+
+                    // Country Switcher Pill Button
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(SurfaceDark)
+                            .border(1.dp, SurfaceBorder, RoundedCornerShape(20.dp))
+                            .clickable { viewModel.setCountryPickerVisible(true) }
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = uiState.selectedCountry.flag,
+                            fontSize = 15.sp
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = uiState.selectedCountry.code,
+                            color = TextPrimary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = "Pilih Negara",
+                            tint = TextMuted,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
 
@@ -153,7 +184,7 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                         .clip(RoundedCornerShape(14.dp)),
                     placeholder = {
                         Text(
-                            text = "Cari radio (Prambors, Gen FM, Delta, Dakwah...)",
+                            text = "Cari radio (BBC, Prambors, Kiss FM, K-Pop...)",
                             color = TextMuted,
                             fontSize = 13.sp
                         )
@@ -193,14 +224,34 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Category Chips
+                // Category Chips (Dynamic with Country & Global)
+                val dynamicCategories = listOf(
+                    "🌍 Global Hits",
+                    "⭐ Favorit",
+                    "${uiState.selectedCountry.flag} ${uiState.selectedCountry.name}",
+                    "Pop",
+                    "Dangdut",
+                    "Berita / News",
+                    "Religi / Dakwah",
+                    "Rock",
+                    "Jazz",
+                    "Chill / Lofi",
+                    "Dance / EDM"
+                )
+
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(vertical = 4.dp)
                 ) {
-                    items(viewModel.categories) { category ->
-                        val isSelected = uiState.selectedCategory == category && !uiState.isSearching
+                    items(dynamicCategories) { category ->
+                        val isCountryChip = category.startsWith(uiState.selectedCountry.flag)
+                        val isSelected = if (isCountryChip) {
+                            uiState.selectedCategory == "🏠 Negara Saya" && !uiState.isSearching
+                        } else {
+                            uiState.selectedCategory == category && !uiState.isSearching
+                        }
+
                         Box(
                             modifier = Modifier
                                 .clip(CircleShape)
@@ -210,7 +261,13 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                                     color = if (isSelected) PrimaryGlow else SurfaceBorder,
                                     shape = CircleShape
                                 )
-                                .clickable { viewModel.onCategorySelected(category) }
+                                .clickable {
+                                    if (isCountryChip) {
+                                        viewModel.onCategorySelected("🏠 Negara Saya")
+                                    } else {
+                                        viewModel.onCategorySelected(category)
+                                    }
+                                }
                                 .padding(horizontal = 14.dp, vertical = 8.dp)
                         ) {
                             Text(
@@ -234,18 +291,21 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                     val headerTitle = when {
                         uiState.isSearching -> "Hasil Pencarian Radio"
                         uiState.selectedCategory == "⭐ Favorit" -> "Stasiun Favorit Saya (${uiState.stations.size})"
-                        else -> "Stasiun Radio Terpopuler"
+                        uiState.selectedCategory == "🏠 Negara Saya" -> "Radio Terpopuler (${uiState.selectedCountry.name})"
+                        uiState.selectedCategory == "🌍 Global Hits" -> "Top 80 Radio Terpopuler di Dunia"
+                        else -> "Stasiun Radio ${uiState.selectedCategory}"
                     }
                     Text(
                         text = headerTitle,
                         color = TextPrimary,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
                     )
                     if (!uiState.isSearching && uiState.selectedCategory != "⭐ Favorit") {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable { viewModel.loadTopStations() }
+                            modifier = Modifier.clickable { viewModel.onCategorySelected(uiState.selectedCategory) }
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Sensors,
@@ -313,7 +373,7 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                             }
                         } else {
                             Text(
-                                text = "Tidak ada stasiun radio ditemukan.",
+                                text = "Tidak ada stasiun radio ditemukan. Coba kata kunci lain.",
                                 color = TextMuted,
                                 fontSize = 14.sp
                             )
@@ -383,6 +443,16 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                 onPrevious = { viewModel.radioPlayer.playPrevious() },
                 onSetSleepTimer = { viewModel.radioPlayer.setSleepTimer(it) },
                 onDismiss = { viewModel.setFullPlayerVisible(false) }
+            )
+        }
+
+        // Country Picker Modal
+        if (uiState.isCountryPickerVisible) {
+            CountryPickerModal(
+                currentCountry = uiState.selectedCountry,
+                countries = viewModel.popularCountries,
+                onSelectCountry = { viewModel.selectCountry(it) },
+                onDismiss = { viewModel.setCountryPickerVisible(false) }
             )
         }
     }

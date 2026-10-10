@@ -33,12 +33,12 @@ class RadioApiService {
         }
     }
 
-    suspend fun getTopIndonesiaStations(): List<RadioStation> {
-        val cacheKey = "stations_id_top"
+    suspend fun getGlobalTopStations(): List<RadioStation> {
+        val cacheKey = "stations_global_top"
         cache[cacheKey]?.let { return it }
 
         return try {
-            val response: List<RadioStation> = client.get("$baseUrl/stations/bycountry/Indonesia?order=votes&reverse=true&limit=80") {
+            val response: List<RadioStation> = client.get("$baseUrl/stations/topclick/80") {
                 header("User-Agent", "MagicRadioApp/1.0.0")
             }.body()
 
@@ -49,30 +49,54 @@ class RadioApiService {
             filtered
         } catch (e: Exception) {
             e.printStackTrace()
-            // Fallback backup mirror
-            getStationsFromMirror("stations/bycountry/Indonesia?order=votes&reverse=true&limit=80")
+            getStationsFromMirror("stations/topclick/80")
         }
     }
 
-    suspend fun getStationsByCategory(category: String): List<RadioStation> {
-        val cacheKey = "category_${category.lowercase()}"
+    suspend fun getTopStationsByCountry(countryCode: String): List<RadioStation> {
+        val code = countryCode.trim().uppercase().ifBlank { "ID" }
+        val cacheKey = "stations_country_${code}"
+        cache[cacheKey]?.let { return it }
+
+        return try {
+            val response: List<RadioStation> = client.get("$baseUrl/stations/bycountrycodeexact/$code?order=votes&reverse=true&limit=80") {
+                header("User-Agent", "MagicRadioApp/1.0.0")
+            }.body()
+
+            val filtered = response.filter { it.streamUrl.isNotBlank() && it.name.isNotBlank() }
+            if (filtered.isNotEmpty()) {
+                cache[cacheKey] = filtered
+                filtered
+            } else {
+                // If specific country returns empty, fallback to global top
+                getGlobalTopStations()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            getStationsFromMirror("stations/bycountrycodeexact/$code?order=votes&reverse=true&limit=80")
+        }
+    }
+
+    suspend fun getStationsByCategory(category: String, countryCode: String? = null): List<RadioStation> {
+        val cacheKey = "category_${category.lowercase()}_${countryCode ?: "all"}"
         cache[cacheKey]?.let { return it }
 
         val tag = when (category.lowercase()) {
             "pop" -> "pop"
             "dangdut" -> "dangdut"
-            "berita / news", "berita" -> "news"
+            "berita / news", "berita", "news" -> "news"
             "religi / dakwah", "religi" -> "islamic"
             "rock" -> "rock"
             "jazz" -> "jazz"
             "chill / lofi", "chill" -> "chill"
-            else -> ""
+            "dance / edm" -> "dance"
+            "classical" -> "classical"
+            else -> category.lowercase()
         }
 
-        if (tag.isBlank()) return getTopIndonesiaStations()
-
         return try {
-            val response: List<RadioStation> = client.get("$baseUrl/stations/bytag/$tag?order=votes&reverse=true&limit=50") {
+            val url = "$baseUrl/stations/bytag/$tag?order=votes&reverse=true&limit=60"
+            val response: List<RadioStation> = client.get(url) {
                 header("User-Agent", "MagicRadioApp/1.0.0")
             }.body()
 
@@ -83,19 +107,19 @@ class RadioApiService {
             filtered
         } catch (e: Exception) {
             e.printStackTrace()
-            getTopIndonesiaStations()
+            getGlobalTopStations()
         }
     }
 
     suspend fun searchStations(query: String): List<RadioStation> {
         val clean = query.trim()
-        if (clean.isBlank()) return getTopIndonesiaStations()
+        if (clean.isBlank()) return getGlobalTopStations()
 
         val cacheKey = "search_${clean.lowercase()}"
         cache[cacheKey]?.let { return it }
 
         return try {
-            val response: List<RadioStation> = client.get("$baseUrl/stations/byname/$clean?order=votes&reverse=true&limit=50") {
+            val response: List<RadioStation> = client.get("$baseUrl/stations/byname/$clean?order=votes&reverse=true&limit=60") {
                 header("User-Agent", "MagicRadioApp/1.0.0")
             }.body()
 

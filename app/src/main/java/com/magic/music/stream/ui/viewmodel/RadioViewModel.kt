@@ -1,6 +1,7 @@
 package com.magic.music.stream.ui.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.magic.music.stream.data.api.RadioApiService
@@ -13,16 +14,25 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.Locale
+
+data class CountryInfo(
+    val code: String,
+    val name: String,
+    val flag: String
+)
 
 data class RadioUiState(
     val searchQuery: String = "",
     val isSearching: Boolean = false,
-    val selectedCategory: String = "Semua",
+    val selectedCategory: String = "🌍 Global Hits",
+    val selectedCountry: CountryInfo = CountryInfo("ID", "Indonesia", "🇮🇩"),
     val stations: List<RadioStation> = emptyList(),
     val topStations: List<RadioStation> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val isFullPlayerVisible: Boolean = false
+    val isFullPlayerVisible: Boolean = false,
+    val isCountryPickerVisible: Boolean = false
 )
 
 class RadioViewModel(application: Application) : AndroidViewModel(application) {
@@ -30,6 +40,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
     private val apiService = RadioApiService()
     val radioPlayer = RadioPlayerController(application)
     val favoritesRepo = FavoritesRepository(application)
+    private val prefs = application.getSharedPreferences("magic_radio_settings", Context.MODE_PRIVATE)
 
     private val _uiState = MutableStateFlow(RadioUiState())
     val uiState: StateFlow<RadioUiState> = _uiState.asStateFlow()
@@ -39,12 +50,43 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
 
     private var searchJob: Job? = null
 
-    val categories = listOf("Semua", "⭐ Favorit", "Pop", "Dangdut", "Berita / News", "Religi / Dakwah", "Rock", "Jazz", "Chill / Lofi")
+    val popularCountries = listOf(
+        CountryInfo("ID", "Indonesia", "🇮🇩"),
+        CountryInfo("MY", "Malaysia", "🇲🇾"),
+        CountryInfo("SG", "Singapore", "🇸🇬"),
+        CountryInfo("US", "United States", "🇺🇸"),
+        CountryInfo("GB", "United Kingdom", "🇬🇧"),
+        CountryInfo("JP", "Japan", "🇯🇵"),
+        CountryInfo("KR", "South Korea", "🇰🇷"),
+        CountryInfo("AU", "Australia", "🇦🇺"),
+        CountryInfo("SA", "Saudi Arabia", "🇸🇦"),
+        CountryInfo("TR", "Turkey", "🇹🇷"),
+        CountryInfo("DE", "Germany", "🇩🇪"),
+        CountryInfo("FR", "France", "🇫🇷"),
+        CountryInfo("IN", "India", "🇮🇳"),
+        CountryInfo("BR", "Brazil", "🇧🇷"),
+        CountryInfo("PH", "Philippines", "🇵🇭")
+    )
+
+    val categories = listOf(
+        "🌍 Global Hits",
+        "⭐ Favorit",
+        "🏠 Negara Saya",
+        "Pop",
+        "Dangdut",
+        "Berita / News",
+        "Religi / Dakwah",
+        "Rock",
+        "Jazz",
+        "Chill / Lofi",
+        "Dance / EDM"
+    )
 
     init {
-        loadTopStations()
+        detectAndInitCountry()
+        loadInitialStations()
 
-        // Sync favorite stations dynamically if currently viewing Favorites tab
+        // Sync favorite stations dynamically if viewing Favorites tab
         viewModelScope.launch {
             favoriteStations.collect { favs ->
                 if (_uiState.value.selectedCategory == "⭐ Favorit" && !_uiState.value.isSearching) {
@@ -54,11 +96,47 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun loadTopStations() {
+    private fun detectAndInitCountry() {
+        val savedCode = prefs.getString("saved_country_code", null)
+        val savedName = prefs.getString("saved_country_name", null)
+        val savedFlag = prefs.getString("saved_country_flag", null)
+
+        if (!savedCode.isNullOrBlank() && !savedName.isNullOrBlank()) {
+            _uiState.value = _uiState.value.copy(
+                selectedCountry = CountryInfo(savedCode, savedName, savedFlag ?: "🌍")
+            )
+            return
+        }
+
+        // Auto-detect from system locale
+        try {
+            val locale = Locale.getDefault()
+            val code = locale.country.uppercase()
+            val name = locale.displayCountry.ifBlank { "Indonesia" }
+            val flag = countryCodeToEmoji(code)
+
+            val matched = popularCountries.find { it.code.equals(code, ignoreCase = true) }
+                ?: CountryInfo(if (code.isNotBlank()) code else "ID", name, flag)
+
+            _uiState.value = _uiState.value.copy(selectedCountry = matched)
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(selectedCountry = CountryInfo("ID", "Indonesia", "🇮🇩"))
+        }
+    }
+
+    private fun countryCodeToEmoji(countryCode: String): String {
+        if (countryCode.length != 2) return "🌍"
+        val firstChar = Character.codePointAt(countryCode, 0) - 0x41 + 0x1F1E6
+        val secondChar = Character.codePointAt(countryCode, 1) - 0x41 + 0x1F1E6
+        return String(Character.toChars(firstChar)) + String(Character.toChars(secondChar))
+    }
+
+    private fun loadInitialStations() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             try {
-                val list = apiService.getTopIndonesiaStations()
+                // Default landing: Global Top Hits
+                val list = apiService.getGlobalTopStations()
                 _uiState.value = _uiState.value.copy(
                     topStations = list,
                     stations = list,
@@ -76,24 +154,54 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
     fun onCategorySelected(category: String) {
         _uiState.value = _uiState.value.copy(selectedCategory = category)
         when (category) {
-            "Semua" -> {
-                if (_uiState.value.topStations.isNotEmpty()) {
-                    _uiState.value = _uiState.value.copy(stations = _uiState.value.topStations)
-                } else {
-                    loadTopStations()
+            "🌍 Global Hits" -> {
+                viewModelScope.launch {
+                    _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+                    val list = apiService.getGlobalTopStations()
+                    _uiState.value = _uiState.value.copy(stations = list, isLoading = false)
                 }
             }
             "⭐ Favorit" -> {
                 _uiState.value = _uiState.value.copy(stations = favoritesRepo.favorites.value)
             }
+            "🏠 Negara Saya" -> {
+                loadCountryStations(_uiState.value.selectedCountry.code)
+            }
             else -> {
                 viewModelScope.launch {
                     _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-                    val list = apiService.getStationsByCategory(category)
+                    val list = apiService.getStationsByCategory(category, _uiState.value.selectedCountry.code)
                     _uiState.value = _uiState.value.copy(stations = list, isLoading = false)
                 }
             }
         }
+    }
+
+    fun selectCountry(country: CountryInfo) {
+        _uiState.value = _uiState.value.copy(
+            selectedCountry = country,
+            isCountryPickerVisible = false,
+            selectedCategory = "🏠 Negara Saya"
+        )
+        prefs.edit()
+            .putString("saved_country_code", country.code)
+            .putString("saved_country_name", country.name)
+            .putString("saved_country_flag", country.flag)
+            .apply()
+
+        loadCountryStations(country.code)
+    }
+
+    private fun loadCountryStations(countryCode: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            val list = apiService.getTopStationsByCountry(countryCode)
+            _uiState.value = _uiState.value.copy(stations = list, isLoading = false)
+        }
+    }
+
+    fun setCountryPickerVisible(visible: Boolean) {
+        _uiState.value = _uiState.value.copy(isCountryPickerVisible = visible)
     }
 
     fun onSearchQueryChanged(query: String) {
@@ -124,10 +232,6 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleFavorite(station: RadioStation) {
         favoritesRepo.toggleFavorite(station)
-    }
-
-    fun isFavorite(stationId: String): Boolean {
-        return favoritesRepo.isFavorite(stationId)
     }
 
     fun setFullPlayerVisible(visible: Boolean) {
