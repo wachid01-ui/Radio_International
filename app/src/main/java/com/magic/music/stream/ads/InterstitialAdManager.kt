@@ -11,6 +11,7 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 
 class InterstitialAdManager(private val context: Context) {
 
+    private val consentManager = GoogleMobileAdsConsentManager.getInstance(context)
     private var interstitialAd: InterstitialAd? = null
     private var isLoading = false
     private var switchStationCount = 0
@@ -21,6 +22,7 @@ class InterstitialAdManager(private val context: Context) {
     }
 
     fun loadAd() {
+        if (!consentManager.canRequestAds) return
         if (isLoading || interstitialAd != null) return
         isLoading = true
 

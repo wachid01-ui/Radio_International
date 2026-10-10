@@ -73,6 +73,7 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
-    // Google Mobile Ads (AdMob)
+    // Google Mobile Ads (AdMob) & UMP (User Messaging Platform / GDPR)
     implementation(libs.play.services.ads)
+    implementation(libs.user.messaging.platform)
 }

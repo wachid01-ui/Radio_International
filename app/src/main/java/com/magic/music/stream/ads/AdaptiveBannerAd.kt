@@ -25,12 +25,15 @@ fun AdaptiveBannerAd(
     val configuration = LocalConfiguration.current
     val screenWidthDp = configuration.screenWidthDp
 
+    val consentManager = remember { GoogleMobileAdsConsentManager.getInstance(context) }
     val adView = remember(screenWidthDp) {
         AdView(context).apply {
             adUnitId = AdConfig.BANNER_AD_UNIT_ID
             val adSize = AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, screenWidthDp)
             setAdSize(adSize)
-            loadAd(AdRequest.Builder().build())
+            if (consentManager.canRequestAds) {
+                loadAd(AdRequest.Builder().build())
+            }
         }
     }
 
