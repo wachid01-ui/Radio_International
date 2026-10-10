@@ -13,7 +13,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Equalizer
-import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Radio
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,8 +27,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.magic.music.stream.data.model.Track
+import com.magic.music.stream.data.model.RadioStation
 import com.magic.music.stream.ui.theme.AccentCyan
+import com.magic.music.stream.ui.theme.AccentRose
 import com.magic.music.stream.ui.theme.PrimaryNeon
 import com.magic.music.stream.ui.theme.SurfaceDark
 import com.magic.music.stream.ui.theme.SurfaceVariantDark
@@ -36,14 +38,15 @@ import com.magic.music.stream.ui.theme.TextPrimary
 import com.magic.music.stream.ui.theme.TextSecondary
 
 @Composable
-fun TrackItem(
-    track: Track,
+fun StationItem(
+    station: RadioStation,
     isPlaying: Boolean,
     isCurrent: Boolean,
+    isBuffering: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val backgroundColor = if (isCurrent) SurfaceVariantDark.copy(alpha = 0.9f) else SurfaceDark.copy(alpha = 0.4f)
+    val backgroundColor = if (isCurrent) SurfaceVariantDark.copy(alpha = 0.95f) else SurfaceDark.copy(alpha = 0.45f)
 
     Row(
         modifier = modifier
@@ -54,27 +57,27 @@ fun TrackItem(
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Thumbnail
+        // Logo
         Box(
             modifier = Modifier
-                .size(56.dp)
+                .size(54.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(SurfaceVariantDark),
             contentAlignment = Alignment.Center
         ) {
-            if (track.thumbnailUrl.isNotBlank()) {
+            if (station.logoUrl.isNotBlank()) {
                 AsyncImage(
-                    model = track.thumbnailUrl,
-                    contentDescription = track.title,
+                    model = station.logoUrl,
+                    contentDescription = station.name,
                     modifier = Modifier.matchParentSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Fit
                 )
             } else {
                 Icon(
-                    imageVector = Icons.Default.MusicNote,
+                    imageVector = Icons.Default.Radio,
                     contentDescription = null,
                     tint = TextMuted,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(26.dp)
                 )
             }
 
@@ -82,27 +85,35 @@ fun TrackItem(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(PrimaryNeon.copy(alpha = 0.35f)),
+                        .background(PrimaryNeon.copy(alpha = 0.4f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Equalizer,
-                        contentDescription = "Playing",
-                        tint = AccentCyan,
-                        modifier = Modifier.size(26.dp)
-                    )
+                    if (isBuffering) {
+                        CircularProgressIndicator(
+                            color = AccentCyan,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Equalizer,
+                            contentDescription = "Playing",
+                            tint = AccentCyan,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
                 }
             }
         }
 
         Spacer(modifier = Modifier.width(14.dp))
 
-        // Info
+        // Station Details
         Column(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = track.title,
+                text = station.name,
                 color = if (isCurrent) AccentCyan else TextPrimary,
                 fontSize = 15.sp,
                 fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
@@ -111,9 +122,9 @@ fun TrackItem(
             )
 
             Text(
-                text = track.artist.ifBlank { "YouTube Music" },
+                text = station.cleanTags.ifBlank { station.state.ifBlank { "Radio Online" } },
                 color = TextSecondary,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 2.dp)
@@ -122,12 +133,19 @@ fun TrackItem(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        // Duration / Tag
-        Text(
-            text = track.formattedDuration(),
-            color = if (isCurrent) PrimaryNeon else TextMuted,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold
-        )
+        // Live / Bitrate Badge
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(if (isCurrent) AccentRose.copy(alpha = 0.2f) else SurfaceVariantDark)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Text(
+                text = if (isCurrent) "LIVE" else "${station.bitrate.coerceAtLeast(64)}k",
+                color = if (isCurrent) AccentRose else TextMuted,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }

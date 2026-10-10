@@ -30,9 +30,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,9 +52,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.magic.music.stream.ui.components.MiniPlayer
-import com.magic.music.stream.ui.components.PlayerModalSheet
-import com.magic.music.stream.ui.components.TrackItem
+import com.magic.music.stream.ui.components.RadioMiniPlayer
+import com.magic.music.stream.ui.components.RadioModalSheet
+import com.magic.music.stream.ui.components.StationItem
 import com.magic.music.stream.ui.theme.AccentCyan
 import com.magic.music.stream.ui.theme.AccentRose
 import com.magic.music.stream.ui.theme.BackgroundDark
@@ -65,17 +65,16 @@ import com.magic.music.stream.ui.theme.SurfaceDark
 import com.magic.music.stream.ui.theme.TextMuted
 import com.magic.music.stream.ui.theme.TextPrimary
 import com.magic.music.stream.ui.theme.TextSecondary
-import com.magic.music.stream.ui.viewmodel.MusicViewModel
+import com.magic.music.stream.ui.viewmodel.RadioViewModel
 
 @Composable
-fun SingleStreamScreen(viewModel: MusicViewModel) {
+fun SingleRadioScreen(viewModel: RadioViewModel) {
     val uiState by viewModel.uiState.collectAsState()
-    val currentTrack by viewModel.playerController.currentTrack.collectAsState()
-    val isPlaying by viewModel.playerController.isPlaying.collectAsState()
-    val currentPos by viewModel.playerController.currentPosition.collectAsState()
-    val duration by viewModel.playerController.duration.collectAsState()
-    val isRepeat by viewModel.playerController.isRepeat.collectAsState()
-    val isShuffle by viewModel.playerController.isShuffle.collectAsState()
+    val currentStation by viewModel.radioPlayer.currentStation.collectAsState()
+    val isPlaying by viewModel.radioPlayer.isPlaying.collectAsState()
+    val isBuffering by viewModel.radioPlayer.isBuffering.collectAsState()
+    val liveTitle by viewModel.radioPlayer.liveTitle.collectAsState()
+    val sleepTimer by viewModel.radioPlayer.sleepTimerMinutes.collectAsState()
 
     val focusManager = LocalFocusManager.current
 
@@ -105,8 +104,8 @@ fun SingleStreamScreen(viewModel: MusicViewModel) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(10.dp))
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(
                                     brush = Brush.linearGradient(
                                         colors = listOf(PrimaryNeon, AccentCyan)
@@ -115,23 +114,23 @@ fun SingleStreamScreen(viewModel: MusicViewModel) {
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.GraphicEq,
+                                imageVector = Icons.Default.Radio,
                                 contentDescription = "Logo",
                                 tint = TextPrimary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "MAGIC STREAM",
+                                text = "MAGIC RADIO",
                                 color = TextPrimary,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Black,
                                 letterSpacing = 1.sp
                             )
                             Text(
-                                text = "Instant YouTube Audio Player",
+                                text = "Live Indonesia & Global Stations",
                                 color = AccentCyan,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium
@@ -151,9 +150,9 @@ fun SingleStreamScreen(viewModel: MusicViewModel) {
                         .clip(RoundedCornerShape(14.dp)),
                     placeholder = {
                         Text(
-                            text = "Cari lagu, artis, atau album...",
+                            text = "Cari radio (Prambors, Gen FM, Delta, Dakwah...)",
                             color = TextMuted,
-                            fontSize = 14.sp
+                            fontSize = 13.sp
                         )
                     },
                     leadingIcon = {
@@ -191,14 +190,14 @@ fun SingleStreamScreen(viewModel: MusicViewModel) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Genre Filter Chips
+                // Category Chips
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(vertical = 4.dp)
                 ) {
-                    items(viewModel.genres) { genre ->
-                        val isSelected = uiState.selectedGenre == genre && !uiState.isSearching
+                    items(viewModel.categories) { category ->
+                        val isSelected = uiState.selectedCategory == category && !uiState.isSearching
                         Box(
                             modifier = Modifier
                                 .clip(CircleShape)
@@ -208,11 +207,11 @@ fun SingleStreamScreen(viewModel: MusicViewModel) {
                                     color = if (isSelected) PrimaryGlow else SurfaceBorder,
                                     shape = CircleShape
                                 )
-                                .clickable { viewModel.onGenreSelected(genre) }
+                                .clickable { viewModel.onCategorySelected(category) }
                                 .padding(horizontal = 14.dp, vertical = 8.dp)
                         ) {
                             Text(
-                                text = genre,
+                                text = category,
                                 color = if (isSelected) TextPrimary else TextSecondary,
                                 fontSize = 13.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
@@ -223,14 +222,14 @@ fun SingleStreamScreen(viewModel: MusicViewModel) {
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Song List Header
+                // Station List Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = if (uiState.isSearching) "Hasil Pencarian" else "Top Trending Hits",
+                        text = if (uiState.isSearching) "Hasil Pencarian Radio" else "Stasiun Radio Terpopuler",
                         color = TextPrimary,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
@@ -238,17 +237,17 @@ fun SingleStreamScreen(viewModel: MusicViewModel) {
                     if (!uiState.isSearching) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable { viewModel.loadTrending() }
+                            modifier = Modifier.clickable { viewModel.loadTopStations() }
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Whatshot,
+                                imageVector = Icons.Default.Sensors,
                                 contentDescription = null,
                                 tint = AccentRose,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Live Charts",
+                                text = "FM Live",
                                 color = AccentRose,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold
@@ -259,7 +258,7 @@ fun SingleStreamScreen(viewModel: MusicViewModel) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Track List & State
+                // Stations LazyColumn
                 if (uiState.isLoading) {
                     Box(
                         modifier = Modifier
@@ -273,7 +272,7 @@ fun SingleStreamScreen(viewModel: MusicViewModel) {
                             modifier = Modifier.size(36.dp)
                         )
                     }
-                } else if (uiState.tracks.isEmpty()) {
+                } else if (uiState.stations.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -281,7 +280,7 @@ fun SingleStreamScreen(viewModel: MusicViewModel) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Tidak ada lagu ditemukan. Silakan cari lagu lain.",
+                            text = "Tidak ada stasiun radio ditemukan.",
                             color = TextMuted,
                             fontSize = 14.sp
                         )
@@ -292,15 +291,16 @@ fun SingleStreamScreen(viewModel: MusicViewModel) {
                             .fillMaxWidth()
                             .weight(1f),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(bottom = if (currentTrack != null) 90.dp else 16.dp)
+                        contentPadding = PaddingValues(bottom = if (currentStation != null) 90.dp else 16.dp)
                     ) {
-                        items(uiState.tracks, key = { it.id }) { track ->
-                            val isCurrent = currentTrack?.id == track.id
-                            TrackItem(
-                                track = track,
+                        items(uiState.stations, key = { it.id }) { station ->
+                            val isCurrent = currentStation?.id == station.id
+                            StationItem(
+                                station = station,
                                 isPlaying = isPlaying,
                                 isCurrent = isCurrent,
-                                onClick = { viewModel.playTrack(track) }
+                                isBuffering = isBuffering && isCurrent,
+                                onClick = { viewModel.playStation(station) }
                             )
                         }
                     }
@@ -309,21 +309,21 @@ fun SingleStreamScreen(viewModel: MusicViewModel) {
 
             // Bottom Floating MiniPlayer
             AnimatedVisibility(
-                visible = currentTrack != null,
+                visible = currentStation != null,
                 enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
                 exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(horizontal = 12.dp, vertical = 12.dp)
             ) {
-                currentTrack?.let { track ->
-                    MiniPlayer(
-                        track = track,
+                currentStation?.let { station ->
+                    RadioMiniPlayer(
+                        station = station,
                         isPlaying = isPlaying,
-                        currentPosition = currentPos,
-                        duration = duration,
-                        onTogglePlayPause = { viewModel.playerController.togglePlayPause() },
-                        onNext = { viewModel.playerController.playNext() },
+                        isBuffering = isBuffering,
+                        liveTitle = liveTitle,
+                        onTogglePlayPause = { viewModel.radioPlayer.togglePlayPause() },
+                        onNext = { viewModel.radioPlayer.playNext() },
                         onClick = { viewModel.setFullPlayerVisible(true) }
                     )
                 }
@@ -332,19 +332,16 @@ fun SingleStreamScreen(viewModel: MusicViewModel) {
 
         // Full Player Modal Sheet
         if (uiState.isFullPlayerVisible) {
-            PlayerModalSheet(
-                track = currentTrack,
+            RadioModalSheet(
+                station = currentStation,
                 isPlaying = isPlaying,
-                currentPosition = currentPos,
-                duration = duration,
-                isRepeat = isRepeat,
-                isShuffle = isShuffle,
-                onTogglePlayPause = { viewModel.playerController.togglePlayPause() },
-                onNext = { viewModel.playerController.playNext() },
-                onPrevious = { viewModel.playerController.playPrevious() },
-                onSeek = { viewModel.playerController.seekTo(it) },
-                onToggleRepeat = { viewModel.playerController.toggleRepeat() },
-                onToggleShuffle = { viewModel.playerController.toggleShuffle() },
+                isBuffering = isBuffering,
+                liveTitle = liveTitle,
+                sleepTimerMinutes = sleepTimer,
+                onTogglePlayPause = { viewModel.radioPlayer.togglePlayPause() },
+                onNext = { viewModel.radioPlayer.playNext() },
+                onPrevious = { viewModel.radioPlayer.playPrevious() },
+                onSetSleepTimer = { viewModel.radioPlayer.setSleepTimer(it) },
                 onDismiss = { viewModel.setFullPlayerVisible(false) }
             )
         }

@@ -16,7 +16,7 @@
         android:hardwareAccelerated="true"
         android:usesCleartextTraffic="true"
         android:icon="@android:drawable/ic_media_play"
-        android:label="Magic Music Stream"
+        android:label="Magic Radio Stream"
         android:roundIcon="@android:drawable/ic_media_play"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">

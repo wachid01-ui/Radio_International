@@ -10,18 +10,18 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
-import com.magic.music.stream.ui.screens.SingleStreamScreen
+import com.magic.music.stream.ui.screens.SingleRadioScreen
 import com.magic.music.stream.ui.theme.MagicMusicTheme
-import com.magic.music.stream.ui.viewmodel.MusicViewModel
+import com.magic.music.stream.ui.viewmodel.RadioViewModel
 
 class MainActivity : ComponentActivity() {
 
-    private val viewModel: MusicViewModel by viewModels()
+    private val viewModel: RadioViewModel by viewModels()
 
     private val requestNotificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { _ ->
-        // Handled
+        // Permission result handled
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MagicMusicTheme {
-                SingleStreamScreen(viewModel = viewModel)
+                SingleRadioScreen(viewModel = viewModel)
             }
         }
     }

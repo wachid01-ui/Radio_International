@@ -17,7 +17,7 @@ import androidx.core.app.NotificationCompat
 import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import com.magic.music.stream.data.model.Track
+import com.magic.music.stream.data.model.RadioStation
 import com.magic.music.stream.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,26 +43,24 @@ class PlaybackService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action
         when (action) {
-            ACTION_PLAY -> playerControllerCallback?.togglePlayPause()
-            ACTION_PAUSE -> playerControllerCallback?.togglePlayPause()
-            ACTION_NEXT -> playerControllerCallback?.playNext()
-            ACTION_PREV -> playerControllerCallback?.playPrevious()
+            ACTION_PLAY -> radioControllerCallback?.togglePlayPause()
+            ACTION_PAUSE -> radioControllerCallback?.togglePlayPause()
+            ACTION_NEXT -> radioControllerCallback?.playNext()
+            ACTION_PREV -> radioControllerCallback?.playPrevious()
             ACTION_STOP -> {
-                playerControllerCallback?.togglePlayPause()
+                radioControllerCallback?.togglePlayPause()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
             ACTION_UPDATE -> {
-                val title = intent.getStringExtra(EXTRA_TITLE) ?: "Magic Music"
-                val artist = intent.getStringExtra(EXTRA_ARTIST) ?: "Streaming"
+                val title = intent.getStringExtra(EXTRA_TITLE) ?: "Magic Radio"
+                val artist = intent.getStringExtra(EXTRA_ARTIST) ?: "Live Stream"
                 val isPlaying = intent.getBooleanExtra(EXTRA_IS_PLAYING, true)
                 val artworkUrl = intent.getStringExtra(EXTRA_ARTWORK) ?: ""
 
-                // 1. Immediately post foreground notification to satisfy Android 8+ foreground service requirements
                 val initialNotification = buildNotification(title, artist, isPlaying, null)
                 startForeground(NOTIFICATION_ID, initialNotification)
 
-                // 2. Asynchronously load high-res album art and update notification
                 updateNotificationWithArtwork(title, artist, isPlaying, artworkUrl)
             }
         }
@@ -74,10 +72,10 @@ class PlaybackService : Service() {
             val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
             wakeLock = powerManager.newWakeLock(
                 PowerManager.PARTIAL_WAKE_LOCK,
-                "MagicMusicStream:WakeLock"
+                "MagicRadioStream:WakeLock"
             ).apply {
                 setReferenceCounted(false)
-                acquire(24 * 60 * 60 * 1000L) // 24 hours
+                acquire(24 * 60 * 60 * 1000L)
             }
         }
 
@@ -86,7 +84,7 @@ class PlaybackService : Service() {
                 val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
                 wifiLock = wifiManager.createWifiLock(
                     WifiManager.WIFI_MODE_FULL_HIGH_PERF,
-                    "MagicMusicStream:WifiLock"
+                    "MagicRadioStream:WifiLock"
                 ).apply {
                     setReferenceCounted(false)
                     acquire()
@@ -99,18 +97,14 @@ class PlaybackService : Service() {
 
     private fun releaseLocks() {
         try {
-            if (wakeLock?.isHeld == true) {
-                wakeLock?.release()
-            }
+            if (wakeLock?.isHeld == true) wakeLock?.release()
             wakeLock = null
         } catch (e: Exception) {
             e.printStackTrace()
         }
 
         try {
-            if (wifiLock?.isHeld == true) {
-                wifiLock?.release()
-            }
+            if (wifiLock?.isHeld == true) wifiLock?.release()
             wifiLock = null
         } catch (e: Exception) {
             e.printStackTrace()
@@ -213,10 +207,10 @@ class PlaybackService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Magic Music Playback",
+                "Magic Radio Playback",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Background playback control and lock screen widget"
+                description = "Live radio background streaming controller"
                 setShowBadge(false)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
@@ -232,15 +226,15 @@ class PlaybackService : Service() {
     }
 
     companion object {
-        const val CHANNEL_ID = "magic_music_playback_channel"
-        const val NOTIFICATION_ID = 1010
+        const val CHANNEL_ID = "magic_radio_playback_channel"
+        const val NOTIFICATION_ID = 2020
 
-        const val ACTION_PLAY = "com.magic.music.ACTION_PLAY"
-        const val ACTION_PAUSE = "com.magic.music.ACTION_PAUSE"
-        const val ACTION_NEXT = "com.magic.music.ACTION_NEXT"
-        const val ACTION_PREV = "com.magic.music.ACTION_PREV"
-        const val ACTION_STOP = "com.magic.music.ACTION_STOP"
-        const val ACTION_UPDATE = "com.magic.music.ACTION_UPDATE"
+        const val ACTION_PLAY = "com.magic.radio.ACTION_PLAY"
+        const val ACTION_PAUSE = "com.magic.radio.ACTION_PAUSE"
+        const val ACTION_NEXT = "com.magic.radio.ACTION_NEXT"
+        const val ACTION_PREV = "com.magic.radio.ACTION_PREV"
+        const val ACTION_STOP = "com.magic.radio.ACTION_STOP"
+        const val ACTION_UPDATE = "com.magic.radio.ACTION_UPDATE"
 
         const val EXTRA_TITLE = "extra_title"
         const val EXTRA_ARTIST = "extra_artist"
@@ -248,15 +242,15 @@ class PlaybackService : Service() {
         const val EXTRA_ARTWORK = "extra_artwork"
 
         var instance: PlaybackService? = null
-        var playerControllerCallback: StreamPlayerController? = null
+        var radioControllerCallback: RadioPlayerController? = null
 
-        fun startOrUpdate(context: Context, track: Track, isPlaying: Boolean) {
+        fun startOrUpdate(context: Context, station: RadioStation, isPlaying: Boolean, liveSubtitle: String = "") {
             val intent = Intent(context, PlaybackService::class.java).apply {
                 action = ACTION_UPDATE
-                putExtra(EXTRA_TITLE, track.title)
-                putExtra(EXTRA_ARTIST, track.artist)
+                putExtra(EXTRA_TITLE, station.name)
+                putExtra(EXTRA_ARTIST, liveSubtitle.ifBlank { station.cleanTags.ifBlank { "Radio Indonesia Live" } })
                 putExtra(EXTRA_IS_PLAYING, isPlaying)
-                putExtra(EXTRA_ARTWORK, track.thumbnailUrl)
+                putExtra(EXTRA_ARTWORK, station.logoUrl)
             }
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
