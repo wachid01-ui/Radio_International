@@ -13,8 +13,8 @@ package com.magic.music.stream.ads
 object AdConfig {
     // Official Google Test App ID: ca-app-pub-3940256099942544~3347511713 (disimpan di AndroidManifest.xml)
 
-    // Test Adaptive Banner Ad Unit ID
-    const val BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/9214589741"
+    // Test Adaptive & Standard Banner Ad Unit ID
+    const val BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111"
 
     // Test Interstitial Ad Unit ID
     const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"

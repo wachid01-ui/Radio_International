@@ -22,7 +22,6 @@ class InterstitialAdManager(private val context: Context) {
     }
 
     fun loadAd() {
-        if (!consentManager.canRequestAds) return
         if (isLoading || interstitialAd != null) return
         isLoading = true
 
