@@ -30,6 +30,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sensors
@@ -50,6 +51,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.magic.music.stream.ui.components.RadioMiniPlayer
@@ -75,6 +77,7 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
     val isBuffering by viewModel.radioPlayer.isBuffering.collectAsState()
     val liveTitle by viewModel.radioPlayer.liveTitle.collectAsState()
     val sleepTimer by viewModel.radioPlayer.sleepTimerMinutes.collectAsState()
+    val favoriteIds by viewModel.favoriteIds.collectAsState()
 
     val focusManager = LocalFocusManager.current
 
@@ -228,13 +231,18 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    val headerTitle = when {
+                        uiState.isSearching -> "Hasil Pencarian Radio"
+                        uiState.selectedCategory == "⭐ Favorit" -> "Stasiun Favorit Saya (${uiState.stations.size})"
+                        else -> "Stasiun Radio Terpopuler"
+                    }
                     Text(
-                        text = if (uiState.isSearching) "Hasil Pencarian Radio" else "Stasiun Radio Terpopuler",
+                        text = headerTitle,
                         color = TextPrimary,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    if (!uiState.isSearching) {
+                    if (!uiState.isSearching && uiState.selectedCategory != "⭐ Favorit") {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.clickable { viewModel.loadTopStations() }
@@ -276,14 +284,40 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f),
+                            .weight(1f)
+                            .padding(horizontal = 24.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "Tidak ada stasiun radio ditemukan.",
-                            color = TextMuted,
-                            fontSize = 14.sp
-                        )
+                        if (uiState.selectedCategory == "⭐ Favorit" && !uiState.isSearching) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = Icons.Default.Favorite,
+                                    contentDescription = null,
+                                    tint = AccentRose.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(48.dp)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "Belum Ada Radio Favorit",
+                                    color = TextPrimary,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Ketuk ikon hati ❤️ pada stasiun radio pilihan Anda untuk menyimpannya di sini.",
+                                    color = TextMuted,
+                                    fontSize = 13.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "Tidak ada stasiun radio ditemukan.",
+                                color = TextMuted,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 } else {
                     LazyColumn(
@@ -295,11 +329,14 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                     ) {
                         items(uiState.stations, key = { it.id }) { station ->
                             val isCurrent = currentStation?.id == station.id
+                            val isFav = favoriteIds.contains(station.id)
                             StationItem(
                                 station = station,
                                 isPlaying = isPlaying,
                                 isCurrent = isCurrent,
                                 isBuffering = isBuffering && isCurrent,
+                                isFavorite = isFav,
+                                onToggleFavorite = { viewModel.toggleFavorite(station) },
                                 onClick = { viewModel.playStation(station) }
                             )
                         }
@@ -332,12 +369,15 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
 
         // Full Player Modal Sheet
         if (uiState.isFullPlayerVisible) {
+            val isCurrentFav = currentStation?.let { favoriteIds.contains(it.id) } ?: false
             RadioModalSheet(
                 station = currentStation,
                 isPlaying = isPlaying,
                 isBuffering = isBuffering,
                 liveTitle = liveTitle,
                 sleepTimerMinutes = sleepTimer,
+                isFavorite = isCurrentFav,
+                onToggleFavorite = { currentStation?.let { viewModel.toggleFavorite(it) } },
                 onTogglePlayPause = { viewModel.radioPlayer.togglePlayPause() },
                 onNext = { viewModel.radioPlayer.playNext() },
                 onPrevious = { viewModel.radioPlayer.playPrevious() },

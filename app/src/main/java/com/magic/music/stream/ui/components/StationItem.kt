@@ -13,9 +13,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Equalizer
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -43,6 +46,8 @@ fun StationItem(
     isPlaying: Boolean,
     isCurrent: Boolean,
     isBuffering: Boolean,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -54,13 +59,13 @@ fun StationItem(
             .clip(RoundedCornerShape(16.dp))
             .background(backgroundColor)
             .clickable(onClick = onClick)
-            .padding(12.dp),
+            .padding(start = 12.dp, end = 6.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Logo
         Box(
             modifier = Modifier
-                .size(54.dp)
+                .size(52.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(SurfaceVariantDark),
             contentAlignment = Alignment.Center
@@ -106,7 +111,7 @@ fun StationItem(
             }
         }
 
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
         // Station Details
         Column(
@@ -131,7 +136,7 @@ fun StationItem(
             )
         }
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(6.dp))
 
         // Live / Bitrate Badge
         Box(
@@ -145,6 +150,19 @@ fun StationItem(
                 color = if (isCurrent) AccentRose else TextMuted,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
+            )
+        }
+
+        // Favorite Toggle Heart Button
+        IconButton(
+            onClick = onToggleFavorite,
+            modifier = Modifier.size(38.dp)
+        ) {
+            Icon(
+                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = if (isFavorite) "Hapus Favorit" else "Tambah Favorit",
+                tint = if (isFavorite) AccentRose else TextMuted,
+                modifier = Modifier.size(20.dp)
             )
         }
     }

@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.magic.music.stream.data.api.RadioApiService
 import com.magic.music.stream.data.model.RadioStation
+import com.magic.music.stream.data.repository.FavoritesRepository
 import com.magic.music.stream.player.RadioPlayerController
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -28,16 +29,29 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
 
     private val apiService = RadioApiService()
     val radioPlayer = RadioPlayerController(application)
+    val favoritesRepo = FavoritesRepository(application)
 
     private val _uiState = MutableStateFlow(RadioUiState())
     val uiState: StateFlow<RadioUiState> = _uiState.asStateFlow()
 
+    val favoriteIds: StateFlow<Set<String>> = favoritesRepo.favoriteIds
+    val favoriteStations: StateFlow<List<RadioStation>> = favoritesRepo.favorites
+
     private var searchJob: Job? = null
 
-    val categories = listOf("Semua", "Pop", "Dangdut", "Berita / News", "Religi / Dakwah", "Rock", "Jazz", "Chill / Lofi")
+    val categories = listOf("Semua", "⭐ Favorit", "Pop", "Dangdut", "Berita / News", "Religi / Dakwah", "Rock", "Jazz", "Chill / Lofi")
 
     init {
         loadTopStations()
+
+        // Sync favorite stations dynamically if currently viewing Favorites tab
+        viewModelScope.launch {
+            favoriteStations.collect { favs ->
+                if (_uiState.value.selectedCategory == "⭐ Favorit" && !_uiState.value.isSearching) {
+                    _uiState.value = _uiState.value.copy(stations = favs)
+                }
+            }
+        }
     }
 
     fun loadTopStations() {
@@ -61,17 +75,23 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onCategorySelected(category: String) {
         _uiState.value = _uiState.value.copy(selectedCategory = category)
-        if (category == "Semua") {
-            if (_uiState.value.topStations.isNotEmpty()) {
-                _uiState.value = _uiState.value.copy(stations = _uiState.value.topStations)
-            } else {
-                loadTopStations()
+        when (category) {
+            "Semua" -> {
+                if (_uiState.value.topStations.isNotEmpty()) {
+                    _uiState.value = _uiState.value.copy(stations = _uiState.value.topStations)
+                } else {
+                    loadTopStations()
+                }
             }
-        } else {
-            viewModelScope.launch {
-                _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-                val list = apiService.getStationsByCategory(category)
-                _uiState.value = _uiState.value.copy(stations = list, isLoading = false)
+            "⭐ Favorit" -> {
+                _uiState.value = _uiState.value.copy(stations = favoritesRepo.favorites.value)
+            }
+            else -> {
+                viewModelScope.launch {
+                    _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+                    val list = apiService.getStationsByCategory(category)
+                    _uiState.value = _uiState.value.copy(stations = list, isLoading = false)
+                }
             }
         }
     }
@@ -82,7 +102,10 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
         if (query.isBlank()) {
             _uiState.value = _uiState.value.copy(
                 isSearching = false,
-                stations = if (_uiState.value.topStations.isNotEmpty()) _uiState.value.topStations else emptyList()
+                stations = when (_uiState.value.selectedCategory) {
+                    "⭐ Favorit" -> favoritesRepo.favorites.value
+                    else -> if (_uiState.value.topStations.isNotEmpty()) _uiState.value.topStations else emptyList()
+                }
             )
             return
         }
@@ -97,6 +120,14 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
 
     fun playStation(station: RadioStation) {
         radioPlayer.playStation(station, _uiState.value.stations)
+    }
+
+    fun toggleFavorite(station: RadioStation) {
+        favoritesRepo.toggleFavorite(station)
+    }
+
+    fun isFavorite(stationId: String): Boolean {
+        return favoritesRepo.isFavorite(stationId)
     }
 
     fun setFullPlayerVisible(visible: Boolean) {
