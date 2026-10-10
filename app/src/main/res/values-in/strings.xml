@@ -1,0 +1,49 @@
+<resources>
+    <string name="app_name">Magic Radio Stream</string>
+    <string name="app_subtitle">Radio Online Lokal &amp; Mancanegara</string>
+    <string name="search_placeholder">Cari radio (BBC, Prambors, Kiss FM, Dangdut...)</string>
+
+    <!-- Categories -->
+    <string name="cat_global_hits">🌍 Global Hits</string>
+    <string name="cat_favorites">⭐ Favorit</string>
+    <string name="cat_my_country">🏠 Negara Saya</string>
+    <string name="cat_pop">Pop</string>
+    <string name="cat_dangdut">Dangdut</string>
+    <string name="cat_news">Berita / News</string>
+    <string name="cat_spiritual">Religi / Dakwah</string>
+    <string name="cat_rock">Rock</string>
+    <string name="cat_jazz">Jazz</string>
+    <string name="cat_chill">Chill / Lofi</string>
+    <string name="cat_dance">Dance / EDM</string>
+
+    <!-- Headers -->
+    <string name="header_search_results">Hasil Pencarian Radio</string>
+    <string name="header_favorites">Stasiun Favorit Saya (%1$d)</string>
+    <string name="header_country_stations">Radio Terpopuler (%1$s)</string>
+    <string name="header_global_hits">Top 80 Radio Terpopuler di Dunia</string>
+    <string name="header_category_stations">Stasiun Radio %1$s</string>
+    <string name="header_refresh">Segarkan</string>
+
+    <!-- Empty States -->
+    <string name="empty_search_title">Tidak ada stasiun radio yang ditemukan</string>
+    <string name="empty_search_desc">Coba gunakan kata kunci lain (misal: nama kota, genre, atau frekuensi).</string>
+    <string name="empty_fav_title">Belum ada stasiun favorit</string>
+    <string name="empty_fav_desc">Tekan ikon hati pada stasiun radio apa pun untuk menyimpannya di sini.</string>
+
+    <!-- Errors -->
+    <string name="error_stream_offline">Stasiun radio offline atau stream tidak dapat dimuat.</string>
+
+    <!-- Country Picker Modal -->
+    <string name="country_picker_title">Pilih Negara Radio</string>
+    <string name="country_picker_desc">Pilih negara untuk memuat stasiun radio lokal terpopuler di negara tersebut.</string>
+    <string name="country_picker_code">Kode: %1$s</string>
+    <string name="btn_close">Tutup</string>
+
+    <!-- Player & Modals -->
+    <string name="player_live_on_air">SIARAN LANGSUNG</string>
+    <string name="player_connecting">Menghubungkan siaran…</string>
+    <string name="player_live_stream">Siaran Radio Langsung</string>
+    <string name="player_sleep_timer">Matikan Otomatis (Sleep Timer)</string>
+    <string name="player_sleep_timer_desc">Radio akan berhenti otomatis setelah:</string>
+    <string name="player_timer_stops_in">Berhenti dalam %1$d mnt</string>
+</resources>

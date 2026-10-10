@@ -55,11 +55,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.magic.music.stream.R
 import com.magic.music.stream.ads.AdaptiveBannerAd
 import com.magic.music.stream.ads.InterstitialAdManager
 import com.magic.music.stream.ui.components.CountryPickerModal
@@ -77,6 +79,11 @@ import com.magic.music.stream.ui.theme.TextMuted
 import com.magic.music.stream.ui.theme.TextPrimary
 import com.magic.music.stream.ui.theme.TextSecondary
 import com.magic.music.stream.ui.viewmodel.RadioViewModel
+
+private data class NavCategory(
+    val key: String,
+    val label: String
+)
 
 @Composable
 fun SingleRadioScreen(viewModel: RadioViewModel) {
@@ -147,7 +154,7 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                                 letterSpacing = 1.sp
                             )
                             Text(
-                                text = "Worldwide & Local FM Online",
+                                text = stringResource(R.string.app_subtitle),
                                 color = AccentCyan,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium
@@ -178,7 +185,7 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                         )
                         Icon(
                             imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Pilih Negara",
+                            contentDescription = stringResource(R.string.country_picker_title),
                             tint = TextMuted,
                             modifier = Modifier.size(18.dp)
                         )
@@ -196,7 +203,7 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                         .clip(RoundedCornerShape(14.dp)),
                     placeholder = {
                         Text(
-                            text = "Cari radio (BBC, Prambors, Kiss FM, K-Pop...)",
+                            text = stringResource(R.string.search_placeholder),
                             color = TextMuted,
                             fontSize = 13.sp
                         )
@@ -238,17 +245,17 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
 
                 // Category Chips (Dynamic with Country & Global)
                 val dynamicCategories = listOf(
-                    "🌍 Global Hits",
-                    "⭐ Favorit",
-                    "${uiState.selectedCountry.flag} ${uiState.selectedCountry.name}",
-                    "Pop",
-                    "Dangdut",
-                    "Berita / News",
-                    "Religi / Dakwah",
-                    "Rock",
-                    "Jazz",
-                    "Chill / Lofi",
-                    "Dance / EDM"
+                    NavCategory("global", stringResource(R.string.cat_global_hits)),
+                    NavCategory("favorites", stringResource(R.string.cat_favorites)),
+                    NavCategory("country", "${uiState.selectedCountry.flag} ${uiState.selectedCountry.name}"),
+                    NavCategory("pop", stringResource(R.string.cat_pop)),
+                    NavCategory("dangdut", stringResource(R.string.cat_dangdut)),
+                    NavCategory("news", stringResource(R.string.cat_news)),
+                    NavCategory("spiritual", stringResource(R.string.cat_spiritual)),
+                    NavCategory("rock", stringResource(R.string.cat_rock)),
+                    NavCategory("jazz", stringResource(R.string.cat_jazz)),
+                    NavCategory("chill", stringResource(R.string.cat_chill)),
+                    NavCategory("dance", stringResource(R.string.cat_dance))
                 )
 
                 LazyRow(
@@ -256,13 +263,9 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(vertical = 4.dp)
                 ) {
-                    items(dynamicCategories) { category ->
-                        val isCountryChip = category.startsWith(uiState.selectedCountry.flag)
-                        val isSelected = if (isCountryChip) {
-                            uiState.selectedCategory == "🏠 Negara Saya" && !uiState.isSearching
-                        } else {
-                            uiState.selectedCategory == category && !uiState.isSearching
-                        }
+                    items(dynamicCategories, key = { it.key }) { category ->
+                        val isSelected = (uiState.selectedCategory == category.key ||
+                                uiState.selectedCategory == category.label) && !uiState.isSearching
 
                         Box(
                             modifier = Modifier
@@ -274,16 +277,12 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                                     shape = CircleShape
                                 )
                                 .clickable {
-                                    if (isCountryChip) {
-                                        viewModel.onCategorySelected("🏠 Negara Saya")
-                                    } else {
-                                        viewModel.onCategorySelected(category)
-                                    }
+                                    viewModel.onCategorySelected(category.key)
                                 }
                                 .padding(horizontal = 14.dp, vertical = 8.dp)
                         ) {
                             Text(
-                                text = category,
+                                text = category.label,
                                 color = if (isSelected) TextPrimary else TextSecondary,
                                 fontSize = 13.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
@@ -301,11 +300,17 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     val headerTitle = when {
-                        uiState.isSearching -> "Hasil Pencarian Radio"
-                        uiState.selectedCategory == "⭐ Favorit" -> "Stasiun Favorit Saya (${uiState.stations.size})"
-                        uiState.selectedCategory == "🏠 Negara Saya" -> "Radio Terpopuler (${uiState.selectedCountry.name})"
-                        uiState.selectedCategory == "🌍 Global Hits" -> "Top 80 Radio Terpopuler di Dunia"
-                        else -> "Stasiun Radio ${uiState.selectedCategory}"
+                        uiState.isSearching -> stringResource(R.string.header_search_results)
+                        uiState.selectedCategory in listOf("favorites", "⭐ Favorit", "⭐ Favorites") ->
+                            stringResource(R.string.header_favorites, uiState.stations.size)
+                        uiState.selectedCategory in listOf("country", "🏠 Negara Saya", "🏠 My Country") ->
+                            stringResource(R.string.header_country_stations, uiState.selectedCountry.name)
+                        uiState.selectedCategory in listOf("global", "🌍 Global Hits") ->
+                            stringResource(R.string.header_global_hits)
+                        else -> {
+                            val catLabel = dynamicCategories.find { it.key == uiState.selectedCategory }?.label ?: uiState.selectedCategory
+                            stringResource(R.string.header_category_stations, catLabel)
+                        }
                     }
                     Text(
                         text = headerTitle,
@@ -314,7 +319,7 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                         fontWeight = FontWeight.Bold,
                         maxLines = 1
                     )
-                    if (!uiState.isSearching && uiState.selectedCategory != "⭐ Favorit") {
+                    if (!uiState.isSearching && uiState.selectedCategory !in listOf("favorites", "⭐ Favorit", "⭐ Favorites")) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.clickable { viewModel.onCategorySelected(uiState.selectedCategory) }
@@ -360,7 +365,7 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                             .padding(horizontal = 24.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (uiState.selectedCategory == "⭐ Favorit" && !uiState.isSearching) {
+                        if (uiState.selectedCategory in listOf("favorites", "⭐ Favorit", "⭐ Favorites") && !uiState.isSearching) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Icon(
                                     imageVector = Icons.Default.Favorite,
@@ -370,25 +375,35 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text(
-                                    text = "Belum Ada Radio Favorit",
+                                    text = stringResource(R.string.empty_fav_title),
                                     color = TextPrimary,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "Ketuk ikon hati ❤️ pada stasiun radio pilihan Anda untuk menyimpannya di sini.",
+                                    text = stringResource(R.string.empty_fav_desc),
                                     color = TextMuted,
                                     fontSize = 13.sp,
                                     textAlign = TextAlign.Center
                                 )
                             }
                         } else {
-                            Text(
-                                text = "Tidak ada stasiun radio ditemukan. Coba kata kunci lain.",
-                                color = TextMuted,
-                                fontSize = 14.sp
-                            )
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = stringResource(R.string.empty_search_title),
+                                    color = TextPrimary,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = stringResource(R.string.empty_search_desc),
+                                    color = TextMuted,
+                                    fontSize = 13.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         }
                     }
                 } else {

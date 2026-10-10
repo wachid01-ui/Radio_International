@@ -89,7 +89,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
         // Sync favorite stations dynamically if viewing Favorites tab
         viewModelScope.launch {
             favoriteStations.collect { favs ->
-                if (_uiState.value.selectedCategory == "⭐ Favorit" && !_uiState.value.isSearching) {
+                if ((_uiState.value.selectedCategory == "favorites" || _uiState.value.selectedCategory == "⭐ Favorit" || _uiState.value.selectedCategory == "⭐ Favorites") && !_uiState.value.isSearching) {
                     _uiState.value = _uiState.value.copy(stations = favs)
                 }
             }
@@ -140,6 +140,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.value = _uiState.value.copy(
                     topStations = list,
                     stations = list,
+                    selectedCategory = "global",
                     isLoading = false
                 )
             } catch (e: Exception) {
@@ -154,23 +155,30 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
     fun onCategorySelected(category: String) {
         _uiState.value = _uiState.value.copy(selectedCategory = category)
         when (category) {
-            "🌍 Global Hits" -> {
+            "global", "🌍 Global Hits" -> {
                 viewModelScope.launch {
                     _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
                     val list = apiService.getGlobalTopStations()
                     _uiState.value = _uiState.value.copy(stations = list, isLoading = false)
                 }
             }
-            "⭐ Favorit" -> {
+            "favorites", "⭐ Favorit", "⭐ Favorites" -> {
                 _uiState.value = _uiState.value.copy(stations = favoritesRepo.favorites.value)
             }
-            "🏠 Negara Saya" -> {
+            "country", "🏠 Negara Saya", "🏠 My Country" -> {
                 loadCountryStations(_uiState.value.selectedCountry.code)
             }
             else -> {
+                val tag = when (category.lowercase()) {
+                    "news" -> "news"
+                    "spiritual" -> "islamic"
+                    "chill" -> "chill"
+                    "dance" -> "dance"
+                    else -> category
+                }
                 viewModelScope.launch {
                     _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-                    val list = apiService.getStationsByCategory(category, _uiState.value.selectedCountry.code)
+                    val list = apiService.getStationsByCategory(tag, _uiState.value.selectedCountry.code)
                     _uiState.value = _uiState.value.copy(stations = list, isLoading = false)
                 }
             }
@@ -181,7 +189,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.value = _uiState.value.copy(
             selectedCountry = country,
             isCountryPickerVisible = false,
-            selectedCategory = "🏠 Negara Saya"
+            selectedCategory = "country"
         )
         prefs.edit()
             .putString("saved_country_code", country.code)

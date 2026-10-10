@@ -29,9 +29,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.magic.music.stream.R
 import com.magic.music.stream.ui.theme.AccentCyan
 import com.magic.music.stream.ui.theme.BackgroundDark
 import com.magic.music.stream.ui.theme.PrimaryNeon
@@ -78,7 +80,7 @@ fun CountryPickerModal(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Pilih Negara Radio",
+                        text = stringResource(R.string.country_picker_title),
                         color = TextPrimary,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
@@ -88,14 +90,14 @@ fun CountryPickerModal(
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Tutup",
+                        contentDescription = stringResource(R.string.btn_close),
                         tint = TextMuted
                     )
                 }
             }
 
             Text(
-                text = "Pilih negara untuk memuat stasiun radio lokal terpopuler di negara tersebut.",
+                text = stringResource(R.string.country_picker_desc),
                 color = TextSecondary,
                 fontSize = 13.sp,
                 modifier = Modifier.padding(bottom = 14.dp)
@@ -134,7 +136,7 @@ fun CountryPickerModal(
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                 )
                                 Text(
-                                    text = "Kode: ${country.code}",
+                                    text = stringResource(R.string.country_picker_code, country.code),
                                     color = TextMuted,
                                     fontSize = 11.sp
                                 )

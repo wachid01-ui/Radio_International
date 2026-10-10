@@ -1,3 +1,49 @@
 <resources>
     <string name="app_name">Magic Radio Stream</string>
+    <string name="app_subtitle">Worldwide &amp; Local FM Online</string>
+    <string name="search_placeholder">Search radio (BBC, Virgin, Kiss FM, Jazz...)</string>
+
+    <!-- Categories -->
+    <string name="cat_global_hits">🌍 Global Hits</string>
+    <string name="cat_favorites">⭐ Favorites</string>
+    <string name="cat_my_country">🏠 My Country</string>
+    <string name="cat_pop">Pop</string>
+    <string name="cat_dangdut">Dangdut</string>
+    <string name="cat_news">News / Talk</string>
+    <string name="cat_spiritual">Spiritual / Faith</string>
+    <string name="cat_rock">Rock</string>
+    <string name="cat_jazz">Jazz</string>
+    <string name="cat_chill">Chill / Lofi</string>
+    <string name="cat_dance">Dance / EDM</string>
+
+    <!-- Headers -->
+    <string name="header_search_results">Search Results</string>
+    <string name="header_favorites">My Favorite Stations (%1$d)</string>
+    <string name="header_country_stations">Popular Stations in %1$s</string>
+    <string name="header_global_hits">Top 80 Worldwide Popular Stations</string>
+    <string name="header_category_stations">%1$s Radio Stations</string>
+    <string name="header_refresh">Refresh</string>
+
+    <!-- Empty States -->
+    <string name="empty_search_title">No radio stations found</string>
+    <string name="empty_search_desc">Try searching for other keywords (e.g. city, genre, or frequency).</string>
+    <string name="empty_fav_title">No favorite stations yet</string>
+    <string name="empty_fav_desc">Tap the heart icon on any station to save it here for quick access.</string>
+
+    <!-- Errors -->
+    <string name="error_stream_offline">Radio station is offline or stream cannot be loaded.</string>
+
+    <!-- Country Picker Modal -->
+    <string name="country_picker_title">Select Radio Country</string>
+    <string name="country_picker_desc">Choose a country to discover its most popular local radio stations.</string>
+    <string name="country_picker_code">Code: %1$s</string>
+    <string name="btn_close">Close</string>
+
+    <!-- Player & Modals -->
+    <string name="player_live_on_air">LIVE ON AIR</string>
+    <string name="player_connecting">Connecting stream…</string>
+    <string name="player_live_stream">Live Radio Stream</string>
+    <string name="player_sleep_timer">Sleep Timer</string>
+    <string name="player_sleep_timer_desc">Radio will automatically stop after:</string>
+    <string name="player_timer_stops_in">Stops in %1$d min</string>
 </resources>

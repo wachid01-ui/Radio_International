@@ -48,12 +48,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.magic.music.stream.R
 import com.magic.music.stream.data.model.RadioStation
 import com.magic.music.stream.ui.theme.AccentCyan
 import com.magic.music.stream.ui.theme.AccentRose
@@ -149,7 +151,7 @@ fun RadioModalSheet(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "LIVE ON AIR",
+                        text = stringResource(R.string.player_live_on_air),
                         color = AccentRose,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -281,7 +283,7 @@ fun RadioModalSheet(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (liveTitle.isNotBlank()) "🎵 $liveTitle" else "Siaran Langsung Radio Digital",
+                    text = if (liveTitle.isNotBlank()) "🎵 $liveTitle" else stringResource(R.string.player_live_stream),
                     color = if (liveTitle.isNotBlank()) TextPrimary else TextMuted,
                     fontSize = 13.sp,
                     fontWeight = if (liveTitle.isNotBlank()) FontWeight.SemiBold else FontWeight.Normal,
