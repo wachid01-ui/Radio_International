@@ -72,4 +72,7 @@ dependencies {
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
+
+    // Google Mobile Ads (AdMob)
+    implementation(libs.play.services.ads)
 }

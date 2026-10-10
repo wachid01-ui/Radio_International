@@ -1,5 +1,6 @@
 package com.magic.music.stream.ui.screens
 
+import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -47,16 +48,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.magic.music.stream.ads.AdaptiveBannerAd
+import com.magic.music.stream.ads.InterstitialAdManager
 import com.magic.music.stream.ui.components.CountryPickerModal
 import com.magic.music.stream.ui.components.RadioMiniPlayer
 import com.magic.music.stream.ui.components.RadioModalSheet
@@ -83,6 +88,10 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
     val sleepTimer by viewModel.radioPlayer.sleepTimerMinutes.collectAsState()
     val favoriteIds by viewModel.favoriteIds.collectAsState()
     val playbackError by viewModel.radioPlayer.playbackError.collectAsState()
+
+    val context = LocalContext.current
+    val activity = context as? Activity
+    val interstitialAdManager = remember { InterstitialAdManager(context) }
 
     val focusManager = LocalFocusManager.current
 
@@ -388,7 +397,7 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                             .fillMaxWidth()
                             .weight(1f),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(bottom = if (currentStation != null) 90.dp else 16.dp)
+                        contentPadding = PaddingValues(bottom = if (currentStation != null) 160.dp else 85.dp)
                     ) {
                         items(uiState.stations, key = { it.id }) { station ->
                             val isCurrent = currentStation?.id == station.id
@@ -400,7 +409,21 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                                 isBuffering = isBuffering && isCurrent,
                                 isFavorite = isFav,
                                 onToggleFavorite = { viewModel.toggleFavorite(station) },
-                                onClick = { viewModel.playStation(station) }
+                                onClick = {
+                                    if (activity != null) {
+                                        interstitialAdManager.showIfReady(
+                                            activity = activity,
+                                            onAdBeforeShow = {
+                                                if (isPlaying) viewModel.radioPlayer.togglePlayPause()
+                                            },
+                                            onProceedAction = {
+                                                viewModel.playStation(station)
+                                            }
+                                        )
+                                    } else {
+                                        viewModel.playStation(station)
+                                    }
+                                }
                             )
                         }
                     }
@@ -414,7 +437,7 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                 exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = if (currentStation != null) 92.dp else 16.dp, start = 16.dp, end = 16.dp)
+                    .padding(bottom = if (currentStation != null) 160.dp else 85.dp, start = 16.dp, end = 16.dp)
             ) {
                 playbackError?.let { msg ->
                     Row(
@@ -460,26 +483,48 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                 }
             }
 
-            // Bottom Floating MiniPlayer
-            AnimatedVisibility(
-                visible = currentStation != null,
-                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            // Bottom Container: Floating MiniPlayer + Adaptive Banner Ad
+            Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(horizontal = 12.dp, vertical = 12.dp)
+                    .fillMaxWidth()
             ) {
-                currentStation?.let { station ->
-                    RadioMiniPlayer(
-                        station = station,
-                        isPlaying = isPlaying,
-                        isBuffering = isBuffering,
-                        liveTitle = liveTitle,
-                        onTogglePlayPause = { viewModel.radioPlayer.togglePlayPause() },
-                        onNext = { viewModel.radioPlayer.playNext() },
-                        onClick = { viewModel.setFullPlayerVisible(true) }
-                    )
+                // Floating MiniPlayer
+                AnimatedVisibility(
+                    visible = currentStation != null,
+                    enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    currentStation?.let { station ->
+                        RadioMiniPlayer(
+                            station = station,
+                            isPlaying = isPlaying,
+                            isBuffering = isBuffering,
+                            liveTitle = liveTitle,
+                            onTogglePlayPause = { viewModel.radioPlayer.togglePlayPause() },
+                            onNext = {
+                                if (activity != null) {
+                                    interstitialAdManager.showIfReady(
+                                        activity = activity,
+                                        onAdBeforeShow = { if (isPlaying) viewModel.radioPlayer.togglePlayPause() },
+                                        onProceedAction = { viewModel.radioPlayer.playNext() }
+                                    )
+                                } else {
+                                    viewModel.radioPlayer.playNext()
+                                }
+                            },
+                            onClick = { viewModel.setFullPlayerVisible(true) }
+                        )
+                    }
                 }
+
+                // Adaptive Banner Ad (Anchored at the bottom)
+                AdaptiveBannerAd(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(BackgroundDark)
+                )
             }
         }
 
@@ -495,8 +540,28 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                 isFavorite = isCurrentFav,
                 onToggleFavorite = { currentStation?.let { viewModel.toggleFavorite(it) } },
                 onTogglePlayPause = { viewModel.radioPlayer.togglePlayPause() },
-                onNext = { viewModel.radioPlayer.playNext() },
-                onPrevious = { viewModel.radioPlayer.playPrevious() },
+                onNext = {
+                    if (activity != null) {
+                        interstitialAdManager.showIfReady(
+                            activity = activity,
+                            onAdBeforeShow = { if (isPlaying) viewModel.radioPlayer.togglePlayPause() },
+                            onProceedAction = { viewModel.radioPlayer.playNext() }
+                        )
+                    } else {
+                        viewModel.radioPlayer.playNext()
+                    }
+                },
+                onPrevious = {
+                    if (activity != null) {
+                        interstitialAdManager.showIfReady(
+                            activity = activity,
+                            onAdBeforeShow = { if (isPlaying) viewModel.radioPlayer.togglePlayPause() },
+                            onProceedAction = { viewModel.radioPlayer.playPrevious() }
+                        )
+                    } else {
+                        viewModel.radioPlayer.playPrevious()
+                    }
+                },
                 onSetSleepTimer = { viewModel.radioPlayer.setSleepTimer(it) },
                 onDismiss = { viewModel.setFullPlayerVisible(false) }
             )
