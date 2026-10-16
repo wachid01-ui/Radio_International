@@ -147,7 +147,7 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "MAGIC RADIO",
+                                text = stringResource(R.string.app_header_title),
                                 color = TextPrimary,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Black,

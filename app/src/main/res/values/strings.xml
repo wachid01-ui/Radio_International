@@ -1,6 +1,7 @@
 <resources>
-    <string name="app_name">Magic Radio Stream</string>
-    <string name="app_subtitle">Worldwide &amp; Local FM Online</string>
+    <string name="app_name">My Radio</string>
+    <string name="app_header_title">MY RADIO</string>
+    <string name="app_subtitle">Radio Online Lokal &amp; Mancanegara</string>
     <string name="search_placeholder">Search radio (BBC, Virgin, Kiss FM, Jazz...)</string>
 
     <!-- Categories -->

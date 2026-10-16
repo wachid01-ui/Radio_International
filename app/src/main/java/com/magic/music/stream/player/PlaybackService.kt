@@ -55,7 +55,7 @@ class PlaybackService : Service() {
                 stopSelf()
             }
             ACTION_UPDATE -> {
-                val title = intent.getStringExtra(EXTRA_TITLE) ?: "Magic Radio"
+                val title = intent.getStringExtra(EXTRA_TITLE) ?: "My Radio"
                 val artist = intent.getStringExtra(EXTRA_ARTIST) ?: "Live Stream"
                 val isPlaying = intent.getBooleanExtra(EXTRA_IS_PLAYING, true)
                 val artworkUrl = intent.getStringExtra(EXTRA_ARTWORK) ?: ""
@@ -87,7 +87,7 @@ class PlaybackService : Service() {
             val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
             wakeLock = powerManager.newWakeLock(
                 PowerManager.PARTIAL_WAKE_LOCK,
-                "MagicRadioStream:WakeLock"
+                "MyRadio:WakeLock"
             ).apply {
                 setReferenceCounted(false)
                 acquire(24 * 60 * 60 * 1000L)
@@ -99,7 +99,7 @@ class PlaybackService : Service() {
                 val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
                 wifiLock = wifiManager.createWifiLock(
                     WifiManager.WIFI_MODE_FULL_HIGH_PERF,
-                    "MagicRadioStream:WifiLock"
+                    "MyRadio:WifiLock"
                 ).apply {
                     setReferenceCounted(false)
                     acquire()
@@ -222,7 +222,7 @@ class PlaybackService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Magic Radio Playback",
+                "My Radio Playback",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "Live radio background streaming controller"
