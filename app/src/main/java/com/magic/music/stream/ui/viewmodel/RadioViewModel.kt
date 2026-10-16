@@ -70,12 +70,12 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
 
     val categories = listOf(
         "🌍 Global Hits",
-        "⭐ Favorit",
-        "🏠 Negara Saya",
+        "⭐ Favorites",
+        "🏠 My Country",
         "Pop",
         "Dangdut",
-        "Berita / News",
-        "Religi / Dakwah",
+        "News / Talk",
+        "Spiritual / Faith",
         "Rock",
         "Jazz",
         "Chill / Lofi",
@@ -146,7 +146,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "Gagal memuat stasiun radio: ${e.localizedMessage}"
+                    errorMessage = "Failed to load radio stations: ${e.localizedMessage}"
                 )
             }
         }
@@ -219,7 +219,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
             _uiState.value = _uiState.value.copy(
                 isSearching = false,
                 stations = when (_uiState.value.selectedCategory) {
-                    "⭐ Favorit" -> favoritesRepo.favorites.value
+                    "favorites", "⭐ Favorites", "⭐ Favorit" -> favoritesRepo.favorites.value
                     else -> if (_uiState.value.topStations.isNotEmpty()) _uiState.value.topStations else emptyList()
                 }
             )

@@ -263,7 +263,7 @@ class PlaybackService : Service() {
             val intent = Intent(context, PlaybackService::class.java).apply {
                 action = ACTION_UPDATE
                 putExtra(EXTRA_TITLE, station.name)
-                putExtra(EXTRA_ARTIST, liveSubtitle.ifBlank { station.cleanTags.ifBlank { "Radio Indonesia Live" } })
+                putExtra(EXTRA_ARTIST, liveSubtitle.ifBlank { station.cleanTags.ifBlank { "Live Radio Stream" } })
                 putExtra(EXTRA_IS_PLAYING, isPlaying)
                 putExtra(EXTRA_ARTWORK, station.logoUrl)
             }

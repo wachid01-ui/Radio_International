@@ -160,7 +160,7 @@ fun StationItem(
         ) {
             Icon(
                 imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                contentDescription = if (isFavorite) "Hapus Favorit" else "Tambah Favorit",
+                contentDescription = if (isFavorite) "Remove from Favorites" else "Add to Favorites",
                 tint = if (isFavorite) AccentRose else TextMuted,
                 modifier = Modifier.size(20.dp)
             )

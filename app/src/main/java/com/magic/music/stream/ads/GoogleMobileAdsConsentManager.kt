@@ -10,8 +10,8 @@ import com.google.android.ump.UserMessagingPlatform
 /**
  * Google Mobile Ads Consent Manager (UMP SDK)
  *
- * Mengelola permintaan persetujuan privasi GDPR (Eropa/UK)
- * secara otomatis sesuai pedoman resmi Google IAB TCF v2.2.
+ * Manages GDPR privacy consent requests (Europe/UK)
+ * automatically in compliance with official Google IAB TCF v2.2 guidelines.
  */
 class GoogleMobileAdsConsentManager private constructor(context: Context) {
 
@@ -19,22 +19,22 @@ class GoogleMobileAdsConsentManager private constructor(context: Context) {
         UserMessagingPlatform.getConsentInformation(context)
 
     /**
-     * Mengecek apakah iklan sudah diizinkan untuk diminta (canRequestAds)
+     * Checks whether ads can be requested (canRequestAds)
      */
     val canRequestAds: Boolean
         get() = consentInformation.canRequestAds()
 
     /**
-     * Mengecek apakah opsi privasi (Privacy Options) diperlukan untuk ditampilkan di menu
+     * Checks whether privacy options are required to be displayed in the menu
      */
     val isPrivacyOptionsRequired: Boolean
         get() = consentInformation.privacyOptionsRequirementStatus ==
                 ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
 
     /**
-     * Meminta pembaruan info persetujuan dan menampilkan formulir GDPR jika diperlukan.
-     * Jika pengguna berada di luar EEA/UK (misal: Indonesia), formulir tidak akan muncul
-     * dan callback onConsentGatheringComplete langsung dipanggil seketika.
+     * Requests consent information update and displays the GDPR form if required.
+     * If the user is located outside EEA/UK, the form will not appear
+     * and the onConsentGatheringComplete callback is triggered immediately.
      */
     fun gatherConsent(
         activity: Activity,
@@ -61,7 +61,7 @@ class GoogleMobileAdsConsentManager private constructor(context: Context) {
     }
 
     /**
-     * Menampilkan kembali formulir opsi privasi jika pengguna ingin mengubah persetujuan mereka nanti.
+     * Re-displays the privacy options form if the user wishes to modify consent later.
      */
     fun showPrivacyOptionsForm(
         activity: Activity,

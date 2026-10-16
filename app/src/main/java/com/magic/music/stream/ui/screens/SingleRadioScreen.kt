@@ -489,7 +489,7 @@ fun SingleRadioScreen(viewModel: RadioViewModel) {
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "Tutup",
+                                contentDescription = "Close",
                                 tint = TextMuted,
                                 modifier = Modifier.size(16.dp)
                             )

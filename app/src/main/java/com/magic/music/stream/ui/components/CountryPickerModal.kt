@@ -146,7 +146,7 @@ fun CountryPickerModal(
                         if (isSelected) {
                             Icon(
                                 imageVector = Icons.Default.Check,
-                                contentDescription = "Terpilih",
+                                contentDescription = "Selected",
                                 tint = AccentCyan,
                                 modifier = Modifier.size(20.dp)
                             )

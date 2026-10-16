@@ -45,14 +45,14 @@ class InterstitialAdManager(private val context: Context) {
     }
 
     /**
-     * Dipanggil setiap kali pengguna memilih stasiun radio.
-     * Mengatur frekuensi kemunculan iklan yang aman dan tidak mengganggu:
-     * - Muncul setiap 4 kali ganti stasiun
-     * - Jeda minimal 2.5 menit antar iklan
+     * Called whenever the user selects a radio station.
+     * Regulates safe and non-intrusive ad appearance frequency:
+     * - Appears every 4 station switches
+     * - Minimum 2.5 minutes interval between ads
      *
-     * @param activity Context Activity untuk menampilkan dialog iklan layar penuh
-     * @param onAdBeforeShow Dipanggil sebelum iklan tayang (untuk mem-pause streaming radio)
-     * @param onProceedAction Dipanggil setelah iklan ditutup (atau jika iklan belum waktunya tayang) untuk memutar radio
+     * @param activity Context Activity for presenting the full-screen ad dialog
+     * @param onAdBeforeShow Called before ad presentation (e.g. to pause live radio streaming)
+     * @param onProceedAction Called after ad is dismissed (or if ad is not ready) to resume/play radio
      */
     fun showIfReady(
         activity: Activity,
@@ -90,7 +90,7 @@ class InterstitialAdManager(private val context: Context) {
             }
             ad?.show(activity)
         } else {
-            // Belum waktunya iklan tayang, lanjutkan putar stasiun radio langsung
+            // Not time for an ad yet, proceed with playing the radio station directly
             onProceedAction()
             if (interstitialAd == null && !isLoading) {
                 loadAd()

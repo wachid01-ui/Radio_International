@@ -108,7 +108,7 @@ class RadioPlayerController(private val context: Context) {
                     exoPlayer.prepare()
                 } else {
                     retryCount = 0
-                    _playbackError.value = "Stasiun radio offline atau stream tidak dapat dimuat."
+                    _playbackError.value = "Radio station is offline or stream cannot be loaded."
                 }
             }
         })
@@ -154,7 +154,7 @@ class RadioPlayerController(private val context: Context) {
             e.printStackTrace()
             _isBuffering.value = false
             _isPlaying.value = false
-            _playbackError.value = "Gagal memutar stasiun: ${e.message}"
+            _playbackError.value = "Failed to play station: ${e.message}"
         }
     }
 
