@@ -21,10 +21,10 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
-        <!-- Google Mobile Ads (AdMob) Test App ID -->
+        <!-- Google Mobile Ads (AdMob) Production App ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-7986150590993691~3876039476" />
 
         <activity
             android:name=".ui.MainActivity"

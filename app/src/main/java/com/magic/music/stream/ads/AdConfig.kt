@@ -13,11 +13,11 @@ package com.magic.music.stream.ads
 object AdConfig {
     // Official Google Test App ID: ca-app-pub-3940256099942544~3347511713 (stored in AndroidManifest.xml)
 
-    // Test Adaptive & Standard Banner Ad Unit ID
-    const val BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111"
+    // Production Adaptive & Standard Banner Ad Unit ID (RadioKu)
+    const val BANNER_AD_UNIT_ID = "ca-app-pub-7986150590993691/7823023345"
 
-    // Test Interstitial Ad Unit ID
-    const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
+    // Production Interstitial Ad Unit ID (RadioKu)
+    const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-7986150590993691/2783373094"
 
     // Safe & Optimal Interstitial Frequency Rules:
     // 1. Shows every time the user switches stations STATIONS_PER_AD times
