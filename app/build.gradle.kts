@@ -7,13 +7,13 @@ plugins {
 
 android {
     namespace = "com.magic.music.stream"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.ryota.radioku"
-        minSdk = 26
-        targetSdk = 35
-        versionCode = 3
+        minSdk = 24
+        targetSdk = 36
+        versionCode = 4
         versionName = "1.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
