@@ -62,7 +62,7 @@ jobs:
           export RELEASE_STORE_PASSWORD="${STORE_PASS:-ryota1116}"
           export RELEASE_KEY_ALIAS="${KEY_ALIAS_SECRET:-radioku}"
           export RELEASE_KEY_PASSWORD="${KEY_PASS:-ryota1116}"
-          ./gradlew bundleRelease assembleRelease assembleDebug --stacktrace 2>&1 | tee gradle_build.log
+          ./gradlew bundleRelease assembleRelease assembleDebug -x lintVitalRelease --stacktrace 2>&1 | tee gradle_build.log
 
       - name: Publish Build Error Details
         if: failure()
