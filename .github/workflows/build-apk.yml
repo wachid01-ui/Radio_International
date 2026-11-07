@@ -1,4 +1,4 @@
-name: Build My Radio APK
+name: "Build RadioKu Release AAB and APK"
 
 on:
   push:
@@ -7,8 +7,12 @@ on:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
+    name: "Build Signed Release AAB and APK"
     runs-on: ubuntu-latest
 
     steps:
@@ -31,13 +35,75 @@ jobs:
           gradle wrapper --gradle-version 8.10.2
           chmod +x gradlew
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+      - name: Prepare Signing Keystore
+        env:
+          SECRET_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          STORE_PASS="${STORE_PASS:-ryota1116}"
+          KEY_PASS="${KEY_PASS:-ryota1116}"
+          if [ -n "$SECRET_KEYSTORE" ]; then
+            echo "Using keystore from repository secrets..."
+            echo "$SECRET_KEYSTORE" | base64 --decode > radioku-release.jks
+          elif [ -f "app/radioku-release.jks" ]; then
+            echo "Using committed keystore file..."
+            cp app/radioku-release.jks radioku-release.jks
+          fi
 
-      - name: Upload Debug APK Artifact
+      - name: "Build Signed Release AAB and APK"
+        env:
+          STORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS_SECRET: ${{ secrets.KEY_ALIAS }}
+        run: |
+          set -o pipefail
+          export RELEASE_STORE_FILE="${GITHUB_WORKSPACE}/radioku-release.jks"
+          export RELEASE_STORE_PASSWORD="${STORE_PASS:-ryota1116}"
+          export RELEASE_KEY_ALIAS="${KEY_ALIAS_SECRET:-radioku}"
+          export RELEASE_KEY_PASSWORD="${KEY_PASS:-ryota1116}"
+          ./gradlew bundleRelease assembleRelease assembleDebug --stacktrace 2>&1 | tee gradle_build.log
+
+      - name: Publish Build Error Details
+        if: failure()
+        run: |
+          echo "## ❌ Build Error Log" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -n 80 gradle_build.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Signed Release AAB
         uses: actions/upload-artifact@v4
-        continue-on-error: true
         with:
-          name: MyRadio-Debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 1
+          name: RadioKu-Release-AAB
+          path: app/build/outputs/bundle/release/*.aab
+          retention-days: 30
+
+      - name: Upload Signed Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RadioKu-Release-APK
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 30
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RadioKu-Debug-APK
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+      - name: Publish to GitHub Releases
+        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_TAG="v1.0.2-release-$(date +'%Y%m%d-%H%M%S')"
+          echo "Creating Release $RELEASE_TAG..."
+          gh release create "$RELEASE_TAG" \
+            app/build/outputs/bundle/release/*.aab \
+            app/build/outputs/apk/release/*.apk \
+            app/build/outputs/apk/debug/*.apk \
+            --title "RadioKu v1.0.2 Release ($RELEASE_TAG)" \
+            --notes "Paket Update RadioKu versi 3 (Signed Release AAB & APK)." \
+            || echo "Release creation skipped or already exists."

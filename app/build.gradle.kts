@@ -19,10 +19,35 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            val rawPath = project.findProperty("RELEASE_STORE_FILE") as? String
+                ?: System.getenv("RELEASE_STORE_FILE")
+                ?: "radioku-release.jks"
+            val targetFile = if (file(rawPath).exists()) file(rawPath) else file("radioku-release.jks")
+            if (targetFile.exists()) {
+                storeFile = targetFile
+                storePassword = project.findProperty("RELEASE_STORE_PASSWORD") as? String
+                    ?: System.getenv("RELEASE_STORE_PASSWORD")
+                    ?: "ryota1116"
+                keyAlias = project.findProperty("RELEASE_KEY_ALIAS") as? String
+                    ?: System.getenv("RELEASE_KEY_ALIAS")
+                    ?: "radioku"
+                keyPassword = project.findProperty("RELEASE_KEY_PASSWORD") as? String
+                    ?: System.getenv("RELEASE_KEY_PASSWORD")
+                    ?: "ryota1116"
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            val releaseSigning = signingConfigs.getByName("release")
+            if (releaseSigning.storeFile != null) {
+                signingConfig = releaseSigning
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
